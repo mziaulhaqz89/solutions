@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<forms xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <systemform>
+    <formid>{312f3a30-a8fa-4fa8-9c24-ff26d9e11ced}</formid>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <FormPresentation>1</FormPresentation>
+    <FormActivationState>1</FormActivationState>
+    <form>
+      <tabs>
+        <tab verticallayout="true" id="{9fe81f95-23b5-4af1-88b3-02d2715531a8}" IsUserDefined="1">
+          <labels>
+            <label description="General" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section showlabel="false" showbar="false" IsUserDefined="0" id="{af35fc00-869f-4f7f-8595-975fe2fddc24}">
+                  <labels>
+                    <label description="General" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{6e939d16-ea4e-4a0c-be0a-bd63e64d85f5}">
+                        <labels>
+                          <label description="Country Name" languagecode="1033" />
+                        </labels>
+                        <control id="mzh_countryname" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="mzh_countryname" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{6b914430-870f-4b7f-8e03-c1da220e846a}">
+                        <labels>
+                          <label description="Owner" languagecode="1033" />
+                        </labels>
+                        <control id="ownerid" classid="{270BD3DB-D9AF-4782-9025-509E298DEC0A}" datafieldname="ownerid" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{d192e3cd-09e6-4934-bafe-e66e4b748513}">
+                        <labels>
+                          <label description="Continent" languagecode="1033" />
+                        </labels>
+                        <control id="mzh_continent" classid="{3ef39988-22bb-4f0b-bbbe-64b5a3748aee}" datafieldname="mzh_continent" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+      </tabs>
+    </form>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <LocalizedNames>
+      <LocalizedName description="Information" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="A form for this entity." languagecode="1033" />
+    </Descriptions>
+  </systemform>
+</forms>

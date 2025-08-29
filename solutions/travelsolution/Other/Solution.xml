@@ -80,6 +80,7 @@
       </Addresses>
     </Publisher>
     <RootComponents>
+      <RootComponent type="1" schemaName="mzh_country" behavior="0" />
       <RootComponent type="1" schemaName="mzh_destination" behavior="0" />
       <RootComponent type="1" schemaName="mzh_travel" behavior="0" />
     </RootComponents>
