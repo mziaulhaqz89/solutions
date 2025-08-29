@@ -106,6 +106,9 @@ jobs:
   deploy-to-test:
     needs: [ convert-to-managed ]
     runs-on: windows-latest
+    environment: 
+      name: TEST
+      url: ${{ inputs.TEST_ENVIRONMENT_URL }}
     env:
       RUNNER_DEBUG: 1
 
@@ -137,6 +140,9 @@ jobs:
   release-to-production:
     needs: [ deploy-to-test ]
     runs-on: windows-latest
+    environment: 
+      name: PRODUCTION
+      url: ${{ inputs.PRODUCTION_ENVIRONMENT_URL }}
     env:
       RUNNER_DEBUG: 1
 
