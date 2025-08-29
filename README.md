@@ -1,6 +1,6 @@
-# Power Platform Solution Export
+# Power Platform Solution Management
 
-This repository contains a GitHub Actions workflow to automatically export Power Platform solutions.
+This repository contains GitHub Actions workflows for comprehensive Power Platform solution management, including export, deployment, and release management with environment-based approval gates.
 
 ## Setup
 
@@ -14,10 +14,9 @@ You need to configure the following secrets in your GitHub repository:
 
 | Secret Name | Description | How to Get |
 |-------------|-------------|------------|
-| `POWER_PLATFORM_APP_ID` | Azure AD App Registration Application ID | Create an App Registration in Azure AD |
-| `POWER_PLATFORM_CLIENT_SECRET` | Azure AD App Registration Client Secret | Generate a client secret in your App Registration |
-| `POWER_PLATFORM_TENANT_ID` | Azure AD Tenant ID | Found in Azure AD properties |
-| `POWER_PLATFORM_ENV_URL` | Default Power Platform Environment URL | Example: `https://yourorg.crm.dynamics.com/` |
+| `PowerPlatformSPN` | Azure AD App Registration Client Secret | Generate a client secret in your App Registration |
+
+**Note**: The workflows use predefined environment URLs and client configurations. Update the workflow files with your specific environment URLs and client IDs.
 
 ### 2. Azure AD App Registration Setup
 
@@ -62,47 +61,138 @@ The service principal needs to be added as a user in your Power Platform environ
 5. Select your app registration
 6. Assign appropriate security roles (System Administrator for full access)
 
+## Workflows
+
+This repository contains several GitHub Actions workflows:
+
+### 1. Export Power Platform Solution (`export-power-platform-solution.yml`)
+- **Purpose**: Export and unpack solutions from DEV environment
+- **Trigger**: Manual workflow dispatch
+- **Features**:
+  - Exports solution from DEV environment
+  - Unpacks solution for source control
+  - Creates feature branch with changes
+  - Automatically commits solution files
+
+### 2. Release Solution to Production (`release-solution-to-prod-with-inputs.yml`)
+- **Purpose**: Deploy solutions through TEST and PRODUCTION environments with approval gates
+- **Trigger**: Called by release-action-call.yml
+- **Features**:
+  - Converts unmanaged solution to managed
+  - **Environment-based approval gates**
+  - Deploys to TEST environment (requires approval)
+  - Deploys to PRODUCTION environment (requires approval)
+  - Artifact management between stages
+
+### 3. Release Action Call (`release-action-call.yml`)
+- **Purpose**: Triggers the release workflow
+- **Trigger**: Manual workflow dispatch or GitHub release creation
+- **Features**:
+  - Calls the reusable release workflow
+  - Configured with specific environment URLs
+
+### 4. Test Action (`test.yml`)
+- **Purpose**: Basic testing workflow
+- **Trigger**: Manual workflow dispatch
+
+## Environment-Based Deployment
+
+### 🔒 Approval Gates
+
+The release workflow now includes approval gates for controlled deployments:
+
+1. **Build Phase**: Convert solution to managed (automatic)
+2. **⏸️ TEST Approval Gate**: Requires manual approval before TEST deployment
+3. **TEST Deployment**: Deploys to TEST environment after approval
+4. **⏸️ PRODUCTION Approval Gate**: Requires manual approval before PRODUCTION deployment  
+5. **PRODUCTION Deployment**: Final deployment after approval
+
+### Environment Configuration
+
+To set up approval gates, you need to configure GitHub environments:
+
+1. Go to Repository → Settings → Environments
+2. Create environments: `TEST` and `PRODUCTION`
+3. Configure protection rules and required reviewers
+4. See `.github/ENVIRONMENT_SETUP.md` for detailed setup instructions
+
+### Current Environment URLs
+- **DEV**: `https://mzhdev.crm4.dynamics.com`
+- **BUILD**: `https://mzhbuild.crm4.dynamics.com`
+- **TEST**: `https://mzhtest.crm4.dynamics.com`
+- **PRODUCTION**: `https://mzhprod.crm11.dynamics.com`
+
 ## Usage
 
-### Manual Trigger (Workflow Dispatch)
-
+### 1. Export Solution from DEV
 1. Go to your repository on GitHub
 2. Click "Actions" tab
-3. Select "Export Power Platform Solution" workflow
+3. Select "export-and-branch-solution" workflow
 4. Click "Run workflow"
-5. Fill in the required parameters:
-   - **Solution Name**: The unique name of your Power Platform solution
-   - **Environment URL**: Your Power Platform environment URL (optional if using default)
-   - **Export Type**: Choose between "managed" or "unmanaged"
+5. Enter the solution name (default: `travelsolution`)
+6. The workflow will:
+   - Export solution from DEV environment
+   - Unpack the solution
+   - Create a feature branch with changes
+   - Commit the unpacked solution files
 
-### Automatic Triggers
+### 2. Release to TEST and PRODUCTION
+1. Create a GitHub release, or
+2. Manually trigger "Release action" workflow
+3. The workflow will:
+   - Convert solution to managed
+   - **Wait for TEST approval** ⏸️
+   - Deploy to TEST environment after approval ✅
+   - **Wait for PRODUCTION approval** ⏸️  
+   - Deploy to PRODUCTION environment after approval ✅
 
-The workflow also runs automatically:
-- On push to `main` or `dev` branches
-- On pull requests to `main` branch
+### 3. Approval Process
+When the workflow reaches an approval gate:
+1. Designated reviewers receive notifications
+2. Reviewers can view the deployment details
+3. Reviewers approve or reject the deployment
+4. Workflow continues only after approval
 
 ## Workflow Features
 
-- **Export Solutions**: Downloads solutions from Power Platform
+- **Export Solutions**: Downloads solutions from Power Platform DEV environment
 - **Unpack Solutions**: Extracts solution components for source control
-- **Source Control**: Commits unpacked solution files to the repository
-- **Artifacts**: Uploads solution ZIP files as GitHub artifacts
-- **Releases**: Creates GitHub releases for main branch exports
-- **Flexible**: Supports both managed and unmanaged solution exports
+- **Source Control**: Commits unpacked solution files to the repository with automatic branching
+- **Managed Solution Conversion**: Converts unmanaged solutions to managed for deployment
+- **Environment-Based Deployment**: Supports DEV → TEST → PRODUCTION promotion
+- **Approval Gates**: Manual approval required before TEST and PRODUCTION deployments
+- **Artifact Management**: Uploads solution ZIP files as GitHub artifacts between stages
+- **Release Management**: Integration with GitHub releases for deployment triggers
+- **Multi-Environment Support**: Separate environments for development, testing, and production
 
 ## Directory Structure
 
-After running the workflow, your repository will have:
+After running the workflows, your repository will have:
 
 ```
+.github/
+├── workflows/           # GitHub Actions workflow files
+│   ├── export-power-platform-solution.yml
+│   ├── release-solution-to-prod-with-inputs.yml
+│   ├── release-action-call.yml
+│   └── test.yml
+└── ENVIRONMENT_SETUP.md # Environment configuration guide
+
 solutions/
-├── exports/          # ZIP files of exported solutions
-└── src/             # Unpacked solution source files
-    └── [SolutionName]/
-        ├── Entities/
-        ├── OptionSets/
-        ├── Workflows/
-        └── ...
+└── travelsolution/      # Unpacked solution source files
+    ├── Entities/
+    │   ├── mzh_destination/
+    │   └── mzh_travel/
+    └── Other/
+        ├── Customizations.xml
+        ├── Relationships.xml
+        └── Solution.xml
+
+out/                     # Temporary build artifacts (not committed)
+├── exported/           # Exported solution ZIP files
+├── solutions/          # Staged unpacked solutions
+├── ship/              # Managed solution artifacts
+└── release/           # Final release artifacts
 ```
 
 ## Troubleshooting
@@ -110,17 +200,28 @@ solutions/
 ### Common Issues
 
 1. **Authentication Failed**
-   - Verify all secrets are correctly configured
+   - Verify `PowerPlatformSPN` secret is correctly configured
    - Ensure the app registration has proper permissions
    - Check that the service principal is added to Power Platform
 
 2. **Solution Not Found**
    - Verify the solution name is correct (case-sensitive)
    - Ensure the solution exists in the specified environment
+   - Check solution is in the DEV environment for exports
 
 3. **Permission Denied**
    - Ensure the service principal has appropriate security roles
    - Check that API permissions are granted in Azure AD
+
+4. **Approval Gate Issues**
+   - Verify GitHub environments (`TEST`, `PRODUCTION`) are configured
+   - Ensure required reviewers are assigned to environments
+   - Check that reviewers have proper repository permissions
+
+5. **Deployment Stuck on Approval**
+   - Check if approval notifications were sent to reviewers
+   - Verify reviewers are available and aware of pending approvals
+   - Review environment protection rules configuration
 
 ### Debug Steps
 
@@ -128,14 +229,28 @@ solutions/
 2. Verify environment URL format (should include protocol and trailing slash)
 3. Test authentication using Power Platform CLI locally
 4. Ensure solution is not currently being edited by someone else
+5. For approval issues, check repository Settings → Environments
+6. Review approval history in workflow run details
 
-## Environment Variables
+## Configuration
 
-You can customize the workflow by modifying these environment variables in the workflow file:
+### Environment URLs
+Update the following URLs in your workflow files to match your Power Platform environments:
 
-- `SOLUTION_NAME`: Default solution name
-- `ENVIRONMENT_URL`: Default environment URL
-- `EXPORT_TYPE`: Default export type (managed/unmanaged)
+**In `export-power-platform-solution.yml`:**
+- `ENVIRONMENT_URL`: Your DEV environment URL
+- `CLIENT_ID`: Your Azure AD app registration client ID  
+- `TENANT_ID`: Your Azure AD tenant ID
+
+**In `release-action-call.yml`:**
+- `BUILD_ENVIRONMENT_URL`: Environment used for solution conversion
+- `TEST_ENVIRONMENT_URL`: TEST environment URL
+- `PRODUCTION_ENVIRONMENT_URL`: PRODUCTION environment URL
+- `CLIENT_ID` and `TENANT_ID`: Same as above
+
+### Solution Configuration
+- Default solution name: `travelsolution`
+- Update `solution_name` parameter in workflows if using a different solution
 
 ## Security Best Practices
 
