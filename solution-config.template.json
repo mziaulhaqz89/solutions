@@ -1,0 +1,43 @@
+{
+  "_comment": "Solution Configuration - Copy this file to solution-config.json and customize for your environment",
+  "solutions": [
+    {
+      "name": "YourSolutionName",
+      "displayName": "Your Solution Display Name",
+      "description": "Description of your solution",
+      "exportSettings": {
+        "managed": true,
+        "unmanaged": true,
+        "autoNumberSettings": true,
+        "calendarSettings": true,
+        "customizationSettings": true,
+        "emailTrackingSettings": true,
+        "generalSettings": true,
+        "marketingSettings": true,
+        "outlookSynchronizationSettings": true,
+        "relationshipRoles": true,
+        "isvConfig": true
+      }
+    }
+  ],
+  "environments": {
+    "development": {
+      "url": "https://yourdev.crm.dynamics.com/",
+      "description": "Development environment"
+    },
+    "test": {
+      "url": "https://yourtest.crm.dynamics.com/",
+      "description": "Test environment"
+    },
+    "production": {
+      "url": "https://yourprod.crm.dynamics.com/",
+      "description": "Production environment"
+    }
+  },
+  "settings": {
+    "defaultExportType": "unmanaged",
+    "includeVersionInFilename": true,
+    "autoCommit": true,
+    "createReleases": true
+  }
+}
