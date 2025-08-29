@@ -32,6 +32,10 @@ on:
         description: 'Build environment url.'
         type: string
         required: true      
+      TEST_ENVIRONMENT_URL:
+        description: 'Test environment url.'
+        type: string
+        required: true
       PRODUCTION_ENVIRONMENT_URL: 
         description: 'Production environment url.'
         type: string
@@ -52,7 +56,6 @@ on:
 jobs:
   convert-to-managed:
     runs-on: windows-latest
-    # or you can say runs-on: ubuntu-latest
     env:
       RUNNER_DEBUG: 1
 
@@ -64,21 +67,22 @@ jobs:
     - name: Install Power Platform CLI
       uses: microsoft/powerplatform-actions/actions-install@v1
 
-    - name: Pack solution
+    - name: Pack solution as unmanaged
       uses: microsoft/powerplatform-actions/pack-solution@v1
       with:
         solution-folder: ${{ inputs.solution_source_folder}}/${{ inputs.solution_name }}
-        solution-file: ${{ inputs.solution_outbound_folder}}/${{ inputs.solution_name }}.zip
+        solution-file: ${{ inputs.solution_outbound_folder}}/${{ inputs.solution_name }}_unmanaged.zip
         solution-type: Unmanaged
 
-    - name: Import solution as unmanaged to build env
+    # Use a dedicated build environment (separate from TEST)
+    - name: Import solution as unmanaged to build env (for conversion only)
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
         environment-url: ${{inputs.BUILD_ENVIRONMENT_URL}}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
-        solution-file: ${{ inputs.solution_outbound_folder}}/${{ inputs.solution_name }}.zip
+        solution-file: ${{ inputs.solution_outbound_folder}}/${{ inputs.solution_name }}_unmanaged.zip
         force-overwrite: true
         publish-changes: true
 
@@ -99,7 +103,7 @@ jobs:
         name: managedSolutions
         path: ${{ inputs.solution_shipping_folder}}/
 
-  release-to-staging:
+  deploy-to-test:
     needs: [ convert-to-managed ]
     runs-on: windows-latest
     env:
@@ -118,7 +122,39 @@ jobs:
       with:
         name: managedSolutions
         path: ${{ inputs.solution_release_folder}}
-    - name: Import solution to prod env
+        
+    - name: Import MANAGED solution to TEST env
+      uses: microsoft/powerplatform-actions/import-solution@v1
+      with:
+        environment-url: ${{inputs.TEST_ENVIRONMENT_URL}}
+        app-id: ${{inputs.CLIENT_ID}}
+        client-secret: ${{ secrets.envSecret }}
+        tenant-id: ${{inputs.TENANT_ID}}
+        solution-file: ${{ inputs.solution_release_folder}}/${{ inputs.solution_name }}_managed.zip
+        force-overwrite: true
+        publish-changes: true
+
+  release-to-production:
+    needs: [ deploy-to-test ]
+    runs-on: windows-latest
+    env:
+      RUNNER_DEBUG: 1
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Install Power Platform CLI
+      uses: microsoft/powerplatform-actions/actions-install@v1
+
+    - name: Fetch the ready to ship solution from GH artifact store
+      uses: actions/download-artifact@v4
+      with:
+        name: managedSolutions
+        path: ${{ inputs.solution_release_folder}}
+        
+    - name: Import MANAGED solution to PROD env
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
         environment-url: ${{inputs.PRODUCTION_ENVIRONMENT_URL}}
