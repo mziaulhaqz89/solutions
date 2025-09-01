@@ -28,9 +28,19 @@ Uses `microsoft/powerplatform-actions/update-solution-version@v1` which:
 ### 1. `export-power-platform-solution.yml`
 **Purpose**: Export solution from DEV environment and create a pull request with changes.
 
+**Supported Solutions**:
+- `travelsolution`: Travel management solution
+- `coffeeshopsolution`: Coffee shop management solution
+
 **Triggers**:
-- Manual trigger (`workflow_dispatch`)
-- Scheduled weekly exports (Sundays at 2 AM UTC)
+- Manual trigger (`workflow_dispatch`) with solution selection dropdown
+- Select which solution to export via the GitHub Actions UI
+
+**Usage**:
+1. Go to Actions tab → "Export Power Platform Solution"
+2. Click "Run workflow" 
+3. Select solution from dropdown (travelsolution or coffeeshopsolution)
+4. Click "Run workflow" to start export
 
 **Required Repository Variables**:
 - `DEV_ENVIRONMENT_URL`: Development environment URL

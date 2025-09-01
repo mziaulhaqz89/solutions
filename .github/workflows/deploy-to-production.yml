@@ -1,0 +1,107 @@
+name: Deploy to Production
+# Deploy any solution to production (with approval)
+
+on:
+  workflow_dispatch:
+    inputs:
+      solution_name:
+        description: 'Select the solution to deploy to production'
+        type: choice
+        required: true
+        options:
+          - travelsolution
+          - coffeeshopsolution
+        default: travelsolution
+
+permissions:
+  contents: read
+
+jobs:
+  read-config:
+    runs-on: ubuntu-latest
+    outputs:
+      build_environment_url: ${{ steps.config.outputs.build_environment_url }}
+      production_environment_url: ${{ steps.config.outputs.production_environment_url }}
+      client_id: ${{ steps.config.outputs.client_id }}
+      tenant_id: ${{ steps.config.outputs.tenant_id }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Read solution configuration
+      id: config
+      run: |
+        SOLUTION_NAME="${{ github.event.inputs.solution_name }}"
+        CONFIG_FILE="solutions-config.json"
+        
+        # Extract environment URLs for the solution
+        BUILD_URL=$(jq -r ".solutions.${SOLUTION_NAME}.environments.build" $CONFIG_FILE)
+        PROD_URL=$(jq -r ".solutions.${SOLUTION_NAME}.environments.prod" $CONFIG_FILE)
+        CLIENT_ID=$(jq -r ".common.client_id" $CONFIG_FILE)
+        TENANT_ID=$(jq -r ".common.tenant_id" $CONFIG_FILE)
+        
+        echo "build_environment_url=$BUILD_URL" >> $GITHUB_OUTPUT
+        echo "production_environment_url=$PROD_URL" >> $GITHUB_OUTPUT
+        echo "client_id=$CLIENT_ID" >> $GITHUB_OUTPUT
+        echo "tenant_id=$TENANT_ID" >> $GITHUB_OUTPUT
+
+  deploy-to-production:
+    needs: read-config
+    runs-on: windows-latest
+    environment:
+      name: PRODUCTION
+      url: ${{ needs.read-config.outputs.production_environment_url }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Power Platform CLI
+      uses: microsoft/powerplatform-actions/actions-install@v1
+
+    - name: Pack solution as unmanaged
+      uses: microsoft/powerplatform-actions/pack-solution@v1
+      with:
+        solution-folder: solutions/${{ github.event.inputs.solution_name }}
+        solution-file: out/solutions/${{ github.event.inputs.solution_name }}_unmanaged.zip
+        solution-type: Unmanaged
+
+    - name: Import solution to build environment (for managed conversion)
+      uses: microsoft/powerplatform-actions/import-solution@v1
+      with:
+        environment-url: ${{ needs.read-config.outputs.build_environment_url }}
+        app-id: ${{ needs.read-config.outputs.client_id }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ needs.read-config.outputs.tenant_id }}
+        solution-file: out/solutions/${{ github.event.inputs.solution_name }}_unmanaged.zip
+        force-overwrite: true
+        publish-changes: true
+
+    - name: Export solution as managed
+      uses: microsoft/powerplatform-actions/export-solution@v1
+      with:
+        environment-url: ${{ needs.read-config.outputs.build_environment_url }}
+        app-id: ${{ needs.read-config.outputs.client_id }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ needs.read-config.outputs.tenant_id }}
+        solution-name: ${{ github.event.inputs.solution_name }}
+        managed: true
+        solution-output-file: out/release/${{ github.event.inputs.solution_name }}_managed.zip
+
+    - name: Deploy to PRODUCTION environment
+      uses: microsoft/powerplatform-actions/import-solution@v1
+      with:
+        environment-url: ${{ needs.read-config.outputs.production_environment_url }}
+        app-id: ${{ needs.read-config.outputs.client_id }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ needs.read-config.outputs.tenant_id }}
+        solution-file: out/release/${{ github.event.inputs.solution_name }}_managed.zip
+        force-overwrite: true
+        publish-changes: true
+
+    - name: Create deployment summary
+      run: |
+        echo "## 🚀 Production Deployment Completed" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Solution**: ${{ github.event.inputs.solution_name }}" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Environment**: ${{ needs.read-config.outputs.production_environment_url }}" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Status**: ✅ Successfully deployed" >> $env:GITHUB_STEP_SUMMARY

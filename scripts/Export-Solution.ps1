@@ -1,8 +1,10 @@
 # Power Platform Solution Export Script
 # This script can be used for local testing or manual exports
+# Supports: travelsolution, coffeeshopsolution
 
 param(
     [Parameter(Mandatory=$true)]
+    [ValidateSet("travelsolution", "coffeeshopsolution")]
     [string]$SolutionName,
     
     [Parameter(Mandatory=$true)]
