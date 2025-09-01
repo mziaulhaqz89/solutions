@@ -1,16 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Entity xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <Name LocalizedName="Destination" OriginalName="Destination">mzh_destination</Name>
+  <Name LocalizedName="Country" OriginalName="Country">mzh_country</Name>
   <EntityInfo>
-    <entity Name="mzh_destination">
+    <entity Name="mzh_country">
       <LocalizedNames>
-        <LocalizedName description="Destination" languagecode="1033" />
+        <LocalizedName description="Country" languagecode="1033" />
       </LocalizedNames>
       <LocalizedCollectionNames>
-        <LocalizedCollectionName description="Destinations" languagecode="1033" />
+        <LocalizedCollectionName description="Countries" languagecode="1033" />
       </LocalizedCollectionNames>
       <Descriptions>
-        <Description description="This table contains records of travel destinations" languagecode="1033" />
+        <Description description="This table contains records of country details" languagecode="1033" />
       </Descriptions>
       <attributes>
         <attribute PhysicalName="CreatedBy">
@@ -289,57 +289,18 @@
             <Description description="Unique identifier of the delegate user who modified the record." languagecode="1033" />
           </Descriptions>
         </attribute>
-        <attribute PhysicalName="mzh_country">
-          <Type>nvarchar</Type>
-          <Name>mzh_country</Name>
-          <LogicalName>mzh_country</LogicalName>
+        <attribute PhysicalName="mzh_Continent">
+          <Type>picklist</Type>
+          <Name>mzh_continent</Name>
+          <LogicalName>mzh_continent</LogicalName>
           <RequiredLevel>none</RequiredLevel>
-          <DisplayMask>ValidForForm|ValidForGrid</DisplayMask>
+          <DisplayMask>ValidForAdvancedFind|ValidForForm|ValidForGrid</DisplayMask>
           <ImeMode>auto</ImeMode>
           <ValidForUpdateApi>1</ValidForUpdateApi>
           <ValidForReadApi>1</ValidForReadApi>
           <ValidForCreateApi>1</ValidForCreateApi>
           <IsCustomField>1</IsCustomField>
           <IsAuditEnabled>1</IsAuditEnabled>
-          <IsSecured>0</IsSecured>
-          <IntroducedVersion>1.0</IntroducedVersion>
-          <IsCustomizable>1</IsCustomizable>
-          <IsRenameable>1</IsRenameable>
-          <CanModifySearchSettings>1</CanModifySearchSettings>
-          <CanModifyRequirementLevelSettings>1</CanModifyRequirementLevelSettings>
-          <CanModifyAdditionalSettings>1</CanModifyAdditionalSettings>
-          <SourceType>0</SourceType>
-          <IsGlobalFilterEnabled>0</IsGlobalFilterEnabled>
-          <IsSortableEnabled>0</IsSortableEnabled>
-          <CanModifyGlobalFilterSettings>1</CanModifyGlobalFilterSettings>
-          <CanModifyIsSortableSettings>1</CanModifyIsSortableSettings>
-          <IsDataSourceSecret>0</IsDataSourceSecret>
-          <AutoNumberFormat></AutoNumberFormat>
-          <IsSearchable>0</IsSearchable>
-          <IsFilterable>0</IsFilterable>
-          <IsRetrievable>0</IsRetrievable>
-          <IsLocalizable>0</IsLocalizable>
-          <Format>text</Format>
-          <MaxLength>100</MaxLength>
-          <Length>200</Length>
-          <displaynames>
-            <displayname description="Country" languagecode="1033" />
-          </displaynames>
-          <Descriptions>
-            <Description description="" languagecode="1033" />
-          </Descriptions>
-        </attribute>
-        <attribute PhysicalName="mzh_destinationcountry">
-          <Type>lookup</Type>
-          <Name>mzh_destinationcountry</Name>
-          <LogicalName>mzh_destinationcountry</LogicalName>
-          <RequiredLevel>none</RequiredLevel>
-          <DisplayMask>ValidForAdvancedFind|ValidForForm|ValidForGrid</DisplayMask>
-          <ValidForUpdateApi>1</ValidForUpdateApi>
-          <ValidForReadApi>1</ValidForReadApi>
-          <ValidForCreateApi>1</ValidForCreateApi>
-          <IsCustomField>1</IsCustomField>
-          <IsAuditEnabled>0</IsAuditEnabled>
           <IsSecured>0</IsSecured>
           <IntroducedVersion>1.0.0.0</IntroducedVersion>
           <IsCustomizable>1</IsCustomizable>
@@ -358,19 +319,66 @@
           <IsFilterable>0</IsFilterable>
           <IsRetrievable>0</IsRetrievable>
           <IsLocalizable>0</IsLocalizable>
-          <LookupStyle>single</LookupStyle>
-          <LookupTypes />
+          <AppDefaultValue>868590000</AppDefaultValue>
+          <optionset Name="mzh_country_mzh_continent">
+            <OptionSetType>picklist</OptionSetType>
+            <IntroducedVersion>1.0.0.0</IntroducedVersion>
+            <IsCustomizable>1</IsCustomizable>
+            <displaynames>
+              <displayname description="Continent" languagecode="1033" />
+            </displaynames>
+            <Descriptions>
+              <Description description="" languagecode="1033" />
+            </Descriptions>
+            <options>
+              <option value="868590000" ExternalValue="" IsHidden="0">
+                <labels>
+                  <label description="Asia" languagecode="1033" />
+                </labels>
+              </option>
+              <option value="868590001" ExternalValue="" IsHidden="0">
+                <labels>
+                  <label description="Europe" languagecode="1033" />
+                </labels>
+              </option>
+              <option value="868590002" ExternalValue="" IsHidden="0">
+                <labels>
+                  <label description="Africa" languagecode="1033" />
+                </labels>
+              </option>
+              <option value="868590003" ExternalValue="" IsHidden="0">
+                <labels>
+                  <label description="North America" languagecode="1033" />
+                </labels>
+              </option>
+              <option value="868590004" ExternalValue="" IsHidden="0">
+                <labels>
+                  <label description="South America" languagecode="1033" />
+                </labels>
+              </option>
+              <option value="868590005" ExternalValue="" IsHidden="0">
+                <labels>
+                  <label description="Oceania" languagecode="1033" />
+                </labels>
+              </option>
+              <option value="868590006" ExternalValue="" IsHidden="0">
+                <labels>
+                  <label description="Antarctica" languagecode="1033" />
+                </labels>
+              </option>
+            </options>
+          </optionset>
           <displaynames>
-            <displayname description="Country" languagecode="1033" />
+            <displayname description="Continent" languagecode="1033" />
           </displaynames>
           <Descriptions>
             <Description description="" languagecode="1033" />
           </Descriptions>
         </attribute>
-        <attribute PhysicalName="mzh_destinationId">
+        <attribute PhysicalName="mzh_countryId">
           <Type>primarykey</Type>
-          <Name>mzh_destinationid</Name>
-          <LogicalName>mzh_destinationid</LogicalName>
+          <Name>mzh_countryid</Name>
+          <LogicalName>mzh_countryid</LogicalName>
           <RequiredLevel>systemrequired</RequiredLevel>
           <DisplayMask>ValidForAdvancedFind|RequiredForGrid</DisplayMask>
           <ImeMode>auto</ImeMode>
@@ -398,16 +406,16 @@
           <IsRetrievable>1</IsRetrievable>
           <IsLocalizable>0</IsLocalizable>
           <displaynames>
-            <displayname description="Destination" languagecode="1033" />
+            <displayname description="Country" languagecode="1033" />
           </displaynames>
           <Descriptions>
             <Description description="Unique identifier for entity instances" languagecode="1033" />
           </Descriptions>
         </attribute>
-        <attribute PhysicalName="mzh_destinationname">
+        <attribute PhysicalName="mzh_CountryName">
           <Type>nvarchar</Type>
-          <Name>mzh_destinationname</Name>
-          <LogicalName>mzh_destinationname</LogicalName>
+          <Name>mzh_countryname</Name>
+          <LogicalName>mzh_countryname</LogicalName>
           <RequiredLevel>required</RequiredLevel>
           <DisplayMask>PrimaryName|ValidForAdvancedFind|ValidForForm|ValidForGrid|RequiredForForm</DisplayMask>
           <ImeMode>auto</ImeMode>
@@ -438,7 +446,7 @@
           <MaxLength>850</MaxLength>
           <Length>1700</Length>
           <displaynames>
-            <displayname description="Destination Name" languagecode="1033" />
+            <displayname description="Country Name" languagecode="1033" />
           </displaynames>
           <Descriptions>
             <Description description="" languagecode="1033" />
@@ -673,7 +681,7 @@
           <IsFilterable>1</IsFilterable>
           <IsRetrievable>0</IsRetrievable>
           <IsLocalizable>0</IsLocalizable>
-          <optionset Name="mzh_destination_statecode">
+          <optionset Name="mzh_country_statecode">
             <OptionSetType>state</OptionSetType>
             <IntroducedVersion>1.0</IntroducedVersion>
             <IsCustomizable>1</IsCustomizable>
@@ -681,7 +689,7 @@
               <displayname description="Status" languagecode="1033" />
             </displaynames>
             <Descriptions>
-              <Description description="Status of the Destination" languagecode="1033" />
+              <Description description="Status of the Country" languagecode="1033" />
             </Descriptions>
             <states>
               <state value="0" defaultstatus="1" invariantname="Active">
@@ -700,7 +708,7 @@
             <displayname description="Status" languagecode="1033" />
           </displaynames>
           <Descriptions>
-            <Description description="Status of the Destination" languagecode="1033" />
+            <Description description="Status of the Country" languagecode="1033" />
           </Descriptions>
         </attribute>
         <attribute PhysicalName="statuscode">
@@ -733,7 +741,7 @@
           <IsFilterable>0</IsFilterable>
           <IsRetrievable>0</IsRetrievable>
           <IsLocalizable>0</IsLocalizable>
-          <optionset Name="mzh_destination_statuscode">
+          <optionset Name="mzh_country_statuscode">
             <OptionSetType>status</OptionSetType>
             <IntroducedVersion>1.0</IntroducedVersion>
             <IsCustomizable>1</IsCustomizable>
@@ -741,7 +749,7 @@
               <displayname description="Status Reason" languagecode="1033" />
             </displaynames>
             <Descriptions>
-              <Description description="Reason for the status of the Destination" languagecode="1033" />
+              <Description description="Reason for the status of the Country" languagecode="1033" />
             </Descriptions>
             <statuses>
               <status value="1" state="0">
@@ -760,7 +768,7 @@
             <displayname description="Status Reason" languagecode="1033" />
           </displaynames>
           <Descriptions>
-            <Description description="Reason for the status of the Destination" languagecode="1033" />
+            <Description description="Reason for the status of the Country" languagecode="1033" />
           </Descriptions>
         </attribute>
         <attribute PhysicalName="TimeZoneRuleVersionNumber">
@@ -842,7 +850,7 @@
           </Descriptions>
         </attribute>
       </attributes>
-      <EntitySetName>mzh_destinations</EntitySetName>
+      <EntitySetName>mzh_countries</EntitySetName>
       <IsDuplicateCheckSupported>1</IsDuplicateCheckSupported>
       <IsBusinessProcessEnabled>0</IsBusinessProcessEnabled>
       <IsRequiredOffline>0</IsRequiredOffline>
