@@ -8,6 +8,7 @@ This directory contains all GitHub Actions workflows for Power Platform solution
 - **`01-export-solutions.yml`** - Export solutions from DEV environment
   - Manual trigger with dropdown to select solution (travelsolution or coffeeshop)
   - Creates PR with exported solution files
+  - **Includes solution checker validation during export**
 
 ### 2. Deployment Workflows  
 - **`02-deploy-travel-solution.yml`** - Deploy Travel Solution
@@ -31,9 +32,9 @@ This directory contains all GitHub Actions workflows for Power Platform solution
 ```
 1. Developer makes changes in DEV environment
    ↓
-2. Run "01-export-solutions.yml" → Select solution → Export
+2. Run "01-export-solutions.yml" → Select solution → Export + Validate
    ↓  
-3. Review and merge PR
+3. Review validation results and merge PR
    ↓
 4. Auto-trigger "02-deploy-travel-solution.yml" OR "03-deploy-coffeeshop-solution.yml"
    ↓
@@ -52,7 +53,7 @@ This directory contains all GitHub Actions workflows for Power Platform solution
 
 | Workflow | Purpose | Trigger |
 |----------|---------|---------|
-| `01-export-solutions.yml` | Export from DEV | Manual (dropdown) |
+| `01-export-solutions.yml` | Export from DEV + Solution Checker | Manual (dropdown) |
 | `02-deploy-travel-solution.yml` | Deploy travel solution | Auto on path change + Manual |
 | `03-deploy-coffeeshop-solution.yml` | Deploy coffeeshop solution | Auto on path change + Manual |
 | `shared-deployment-pipeline.yml` | Reusable deployment logic | Called by other workflows |

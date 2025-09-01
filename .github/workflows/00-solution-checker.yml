@@ -1,0 +1,170 @@
+name: Solution Checker - Validate Solutions
+# Run Power Platform Solution Checker to validate solutions
+# Checks for issues, performance problems, and best practices
+
+on:
+  workflow_call:
+    inputs:
+      solution_name:
+        description: 'Solution to validate'
+        type: string
+        required: true
+    secrets:
+      PowerPlatformSPN:
+        description: 'Service Principal secret for authentication'
+        required: true
+  workflow_dispatch:
+    inputs:
+      solution_name:
+        description: 'Select solution to validate'
+        type: choice
+        options:
+          - travelsolution
+          - coffeeshop
+        required: true
+        default: travelsolution
+  pull_request:
+    paths:
+      - 'solutions/**'
+  push:
+    branches: [main]
+    paths:
+      - 'solutions/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  solution-checker:
+    runs-on: windows-latest
+    env:
+      RUNNER_DEBUG: 1
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Power Platform CLI
+      uses: microsoft/powerplatform-actions/actions-install@v1
+
+    - name: Determine solution to check
+      id: determine-solution
+      run: |
+        if ("${{ github.event_name }}" -eq "workflow_call") {
+          $solution = "${{ inputs.solution_name }}"
+          Write-Host "Workflow call: checking $solution"
+          echo "solution_name=$solution" >> $env:GITHUB_OUTPUT
+        }
+        elseif ("${{ github.event_name }}" -eq "workflow_dispatch") {
+          $solution = "${{ github.event.inputs.solution_name }}"
+          Write-Host "Manual trigger: checking $solution"
+          echo "solution_name=$solution" >> $env:GITHUB_OUTPUT
+        }
+        else {
+          # For PR/push events, check changed solutions
+          $changedFiles = git diff --name-only HEAD~1 HEAD | Where-Object { $_ -like "solutions/*" }
+          
+          if ($changedFiles) {
+            $changedSolutions = $changedFiles | ForEach-Object { ($_ -split '/')[1] } | Sort-Object | Get-Unique
+            
+            if ($changedSolutions.Count -eq 1) {
+              $solution = $changedSolutions[0]
+              Write-Host "Single solution changed: $solution"
+              echo "solution_name=$solution" >> $env:GITHUB_OUTPUT
+            }
+            else {
+              Write-Host "Multiple or no solutions changed, checking travelsolution as default"
+              echo "solution_name=travelsolution" >> $env:GITHUB_OUTPUT
+            }
+          }
+          else {
+            Write-Host "No solution changes detected, checking travelsolution"
+            echo "solution_name=travelsolution" >> $env:GITHUB_OUTPUT
+          }
+        }
+
+    - name: Pack solution for validation
+      uses: microsoft/powerplatform-actions/pack-solution@v1
+      with:
+        solution-folder: solutions/${{ steps.determine-solution.outputs.solution_name }}
+        solution-file: temp/${{ steps.determine-solution.outputs.solution_name }}_validation.zip
+        solution-type: Unmanaged
+
+    - name: Run Solution Checker
+      uses: microsoft/powerplatform-actions/check-solution@v1
+      with:
+        environment-url: 'https://mzhbuild.crm4.dynamics.com'
+        app-id: 'c07145b8-e4f8-48ad-8a7c-9fe5d3827e52'
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: 'd7d483b3-60d3-4211-a15e-9c2a090d2136'
+        path: temp/${{ steps.determine-solution.outputs.solution_name }}_validation.zip
+        checker-logs-artifact-name: solution-checker-logs-${{ steps.determine-solution.outputs.solution_name }}
+
+    - name: Upload Solution Checker Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: solution-checker-results-${{ steps.determine-solution.outputs.solution_name }}
+        path: |
+          **/*-analysis-result.json
+          **/*-analysis-result.xml
+          **/*-analysis-result.zip
+        retention-days: 30
+
+    - name: Parse Solution Checker Results
+      if: always()
+      run: |
+        # Find the analysis result file
+        $resultFile = Get-ChildItem -Recurse -Filter "*-analysis-result.json" | Select-Object -First 1
+        
+        if ($resultFile) {
+          $results = Get-Content $resultFile.FullName | ConvertFrom-Json
+          
+          $criticalCount = 0
+          $highCount = 0
+          $mediumCount = 0
+          $lowCount = 0
+          $infoCount = 0
+          
+          foreach ($issue in $results.issues) {
+            switch ($issue.level) {
+              "Critical" { $criticalCount++ }
+              "High" { $highCount++ }
+              "Medium" { $mediumCount++ }
+              "Low" { $lowCount++ }
+              "Informational" { $infoCount++ }
+            }
+          }
+          
+          echo "## 🔍 Solution Checker Results - ${{ steps.determine-solution.outputs.solution_name }}" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "| Severity | Count |" >> $env:GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $env:GITHUB_STEP_SUMMARY
+          echo "| 🔴 Critical | $criticalCount |" >> $env:GITHUB_STEP_SUMMARY
+          echo "| 🟠 High | $highCount |" >> $env:GITHUB_STEP_SUMMARY
+          echo "| 🟡 Medium | $mediumCount |" >> $env:GITHUB_STEP_SUMMARY
+          echo "| 🔵 Low | $lowCount |" >> $env:GITHUB_STEP_SUMMARY
+          echo "| ℹ️ Info | $infoCount |" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          
+          if ($criticalCount -gt 0 -or $highCount -gt 0) {
+            echo "❌ **Status**: Solution has critical or high severity issues" >> $env:GITHUB_STEP_SUMMARY
+            echo "🚨 **Action Required**: Review and fix critical/high issues before deployment" >> $env:GITHUB_STEP_SUMMARY
+            exit 1
+          }
+          elseif ($mediumCount -gt 0) {
+            echo "⚠️ **Status**: Solution has medium severity issues" >> $env:GITHUB_STEP_SUMMARY
+            echo "💡 **Recommendation**: Consider fixing medium issues for better quality" >> $env:GITHUB_STEP_SUMMARY
+          }
+          else {
+            echo "✅ **Status**: Solution passes validation checks" >> $env:GITHUB_STEP_SUMMARY
+            echo "🎉 **Ready for deployment!**" >> $env:GITHUB_STEP_SUMMARY
+          }
+          
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "📄 **Full results available in workflow artifacts**" >> $env:GITHUB_STEP_SUMMARY
+        }
+        else {
+          echo "⚠️ Could not find solution checker results file" >> $env:GITHUB_STEP_SUMMARY
+        }

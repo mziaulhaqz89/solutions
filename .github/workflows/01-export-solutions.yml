@@ -82,3 +82,24 @@ jobs:
         solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.solution_name }}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         allow-empty-commit: true
+
+    - name: Run Solution Checker
+      uses: microsoft/powerplatform-actions/check-solution@v1
+      with:
+        environment-url: ${{env.ENVIRONMENT_URL}}
+        app-id: ${{env.CLIENT_ID}}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{env.TENANT_ID}}
+        path: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}.zip
+        checker-logs-artifact-name: solution-checker-logs-${{ github.event.inputs.solution_name }}
+
+    - name: Upload Solution Checker Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: solution-checker-results-${{ github.event.inputs.solution_name }}
+        path: |
+          **/*-analysis-result.json
+          **/*-analysis-result.xml
+          **/*-analysis-result.zip
+        retention-days: 30
