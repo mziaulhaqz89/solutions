@@ -45,6 +45,13 @@ jobs:
     - name: Install Power Platform CLI
       uses: microsoft/powerplatform-actions/actions-install@v1
 
+    # Update solution version using Microsoft Power Platform Actions
+    - name: Update Solution Version
+      id: update-version
+      uses: microsoft/powerplatform-actions/update-solution-version@v1
+      with:
+        strategy: "gittags"
+
     - name: who-am-i action
       uses: microsoft/powerplatform-actions/who-am-i@v1
       with:
