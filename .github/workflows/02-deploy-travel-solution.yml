@@ -1,4 +1,4 @@
-name: Deploy Travel Solution
+name: 02-Deploy Travel Solution
 # Deploy travelsolution to TEST and PRODUCTION environments
 # Triggers when travelsolution is updated or manually
 

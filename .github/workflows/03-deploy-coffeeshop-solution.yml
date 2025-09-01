@@ -1,4 +1,4 @@
-name: Deploy Coffee Shop Solution
+name: 03-Deploy Coffee Shop Solution
 # Deploy coffeeshop to TEST and PRODUCTION environments  
 # Triggers when coffeeshop is updated or manually
 
