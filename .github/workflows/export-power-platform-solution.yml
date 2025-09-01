@@ -12,8 +12,7 @@ on:
         type: choice
         options:
           - travelsolution
-          - coffeeshopsolution
-        default: travelsolution
+          - coffeeshop
       #Do Not change these values
       solution_exported_folder:
         description: 'folder name for staging the exported solution *do not change*'
