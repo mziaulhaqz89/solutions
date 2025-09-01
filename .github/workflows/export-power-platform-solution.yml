@@ -23,6 +23,7 @@ on:
         description: 'folder name to be created and checked in *do not change*'
         required: true
         default: solutions/
+        
 env:
   #edit your values here
   ENVIRONMENT_URL: 'https://mzhdev.crm4.dynamics.com'
