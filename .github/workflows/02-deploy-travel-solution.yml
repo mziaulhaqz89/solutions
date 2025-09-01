@@ -1,22 +1,24 @@
-name: Deploy Coffee Shop Solution
-# Deploy coffeeshop to TEST and PRODUCTION environments  
-# Triggers when coffeeshop is updated or manually
+name: Deploy Travel Solution
+# Deploy travelsolution to TEST and PRODUCTION environments
+# Triggers when travelsolution is updated or manually
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths: 
-      - 'solutions/coffeeshop/**'
+      - 'solutions/travelsolution/**'
+  release:
+    types: [created]
 
 permissions:
   contents: write
 
 jobs:
-  deploy-coffeeshop-solution:
-    uses: ./.github/workflows/release-solution-to-prod-with-inputs.yml
+  deploy-travel-solution:
+    uses: ./.github/workflows/shared-deployment-pipeline.yml
     with:
-      solution_name: coffeeshop
+      solution_name: travelsolution
       BUILD_ENVIRONMENT_URL: 'https://mzhbuild.crm4.dynamics.com'
       TEST_ENVIRONMENT_URL: 'https://mzhtest.crm4.dynamics.com'
       PRODUCTION_ENVIRONMENT_URL: 'https://mzhprod.crm11.dynamics.com'
