@@ -1,20 +1,24 @@
-name: Release action
-# Call the reusable workflow release-solution-with-inputs.yml
-# Release your solution to prod when you create a new release.
+name: Deploy Travel Solution
+# Deploy travelsolution to TEST and PRODUCTION environments
+# Triggers when travelsolution is updated or manually
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: 
+      - 'solutions/travelsolution/**'
   release:
-      types: [created]        
+    types: [created]
+
 permissions:
   contents: write
+
 jobs:
-  Release-solution-ALMLab:
+  deploy-travel-solution:
     uses: ./.github/workflows/release-solution-to-prod-with-inputs.yml
     with:
-      #You can specify the solution name here
       solution_name: travelsolution
-      #Update your values here
       BUILD_ENVIRONMENT_URL: 'https://mzhbuild.crm4.dynamics.com'
       TEST_ENVIRONMENT_URL: 'https://mzhtest.crm4.dynamics.com'
       PRODUCTION_ENVIRONMENT_URL: 'https://mzhprod.crm11.dynamics.com'
