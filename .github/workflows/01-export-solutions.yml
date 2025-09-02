@@ -15,6 +15,11 @@ on:
         options:
           - travelsolution
           - coffeeshop
+      # Optional custom branch name
+      custom_branch_name:
+        description: 'Custom branch name (optional - leave empty for auto-generated)'
+        required: false
+        type: string
       #Do Not change these values
       solution_exported_folder:
         description: 'folder name for staging the exported solution *do not change*'
@@ -77,6 +82,12 @@ jobs:
         solution-type: 'Unmanaged'
         overwrite-files: true
 
+    - name: Generate timestamp for branch name
+      id: timestamp
+      run: |
+        $timestamp = Get-Date -Format "yyyyMMdd-HHmm"
+        echo "value=$timestamp" >> $env:GITHUB_OUTPUT
+
     - name: branch-solution, prepare it for a PullRequest
       uses: microsoft/powerplatform-actions/branch-solution@v1
       with:
@@ -84,6 +95,7 @@ jobs:
         solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.solution_name }}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         allow-empty-commit: true
+        branch-name: ${{ github.event.inputs.custom_branch_name || format('{0}-by-{1}-{2}', github.event.inputs.solution_name, github.actor, steps.timestamp.outputs.value) }}
 
     - name: Run Solution Checker
       uses: microsoft/powerplatform-actions/check-solution@v1
