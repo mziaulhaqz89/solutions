@@ -28,18 +28,6 @@ on:
        description: 'folder where the released binaries are going to be hosted *do not change*'
        type: string
        default: out/release
-      BUILD_ENVIRONMENT_URL:
-        description: 'Build environment url.'
-        type: string
-        required: false      
-      TEST_ENVIRONMENT_URL:
-        description: 'Test environment url.'
-        type: string
-        required: false
-      PRODUCTION_ENVIRONMENT_URL: 
-        description: 'Production environment url.'
-        type: string
-        required: false
       CLIENT_ID: 
         description: 'The client id'
         type: string
@@ -79,7 +67,7 @@ jobs:
     - name: Import solution as unmanaged to build env (for conversion only)
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL || inputs.BUILD_ENVIRONMENT_URL }}
+        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
@@ -90,7 +78,7 @@ jobs:
     - name: Export solution as managed
       uses: microsoft/powerplatform-actions/export-solution@v1
       with:
-        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL || inputs.BUILD_ENVIRONMENT_URL }}
+        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }} 
         tenant-id: ${{inputs.TENANT_ID}}
@@ -101,7 +89,7 @@ jobs:
     - name: Run Solution Checker on Managed Solution
       uses: microsoft/powerplatform-actions/check-solution@v1
       with:
-        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL || inputs.BUILD_ENVIRONMENT_URL }}
+        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
@@ -127,7 +115,7 @@ jobs:
     runs-on: windows-latest
     environment: 
       name: TEST
-      url: ${{ vars.TEST_ENVIRONMENT_URL || inputs.TEST_ENVIRONMENT_URL }}
+      url: ${{ vars.TEST_ENVIRONMENT_URL }}
     env:
       RUNNER_DEBUG: 1
 
@@ -144,29 +132,11 @@ jobs:
       with:
         name: managedSolutions
         path: ${{ inputs.solution_release_folder}}
-
-    - name: Run Solution Checker before TEST deployment
-      uses: microsoft/powerplatform-actions/check-solution@v1
-      with:
-        environment-url: ${{ vars.TEST_ENVIRONMENT_URL || inputs.TEST_ENVIRONMENT_URL }}
-        app-id: ${{inputs.CLIENT_ID}}
-        client-secret: ${{ secrets.envSecret }}
-        tenant-id: ${{inputs.TENANT_ID}}
-        path: ${{ inputs.solution_release_folder}}/${{ inputs.solution_name }}_managed.zip
-
-    - name: Upload TEST Solution Checker Results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-deployment-checker-results-${{ inputs.solution_name }}
-        path: |
-          ${{ runner.temp }}/PowerAppsChecker/**/*
-        retention-days: 30
         
     - name: Import MANAGED solution to TEST env
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: ${{ vars.TEST_ENVIRONMENT_URL || inputs.TEST_ENVIRONMENT_URL }}
+        environment-url: ${{ vars.TEST_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
@@ -179,7 +149,7 @@ jobs:
     runs-on: windows-latest
     environment: 
       name: PRODUCTION
-      url: ${{ vars.PRODUCTION_ENVIRONMENT_URL || inputs.PRODUCTION_ENVIRONMENT_URL }}
+      url: ${{ vars.PRODUCTION_ENVIRONMENT_URL }}
     env:
       RUNNER_DEBUG: 1
 
@@ -196,29 +166,11 @@ jobs:
       with:
         name: managedSolutions
         path: ${{ inputs.solution_release_folder}}
-
-    - name: Run Solution Checker before PRODUCTION deployment
-      uses: microsoft/powerplatform-actions/check-solution@v1
-      with:
-        environment-url: ${{ vars.PRODUCTION_ENVIRONMENT_URL || inputs.PRODUCTION_ENVIRONMENT_URL }}
-        app-id: ${{inputs.CLIENT_ID}}
-        client-secret: ${{ secrets.envSecret }}
-        tenant-id: ${{inputs.TENANT_ID}}
-        path: ${{ inputs.solution_release_folder}}/${{ inputs.solution_name }}_managed.zip
-
-    - name: Upload PRODUCTION Solution Checker Results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: prod-deployment-checker-results-${{ inputs.solution_name }}
-        path: |
-          ${{ runner.temp }}/PowerAppsChecker/**/*
-        retention-days: 30
         
     - name: Import MANAGED solution to PROD env
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: ${{ vars.PRODUCTION_ENVIRONMENT_URL || inputs.PRODUCTION_ENVIRONMENT_URL }}
+        environment-url: ${{ vars.PRODUCTION_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
