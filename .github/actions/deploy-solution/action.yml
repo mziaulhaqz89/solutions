@@ -23,11 +23,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: actions/checkout@v4
-      with:
-        lfs: true
-      shell: pwsh
-
     - name: Install Power Platform CLI
       uses: microsoft/powerplatform-actions/actions-install@v1
 
