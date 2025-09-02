@@ -36,9 +36,9 @@ on:
         
 env:
   #edit your values here
-  ENVIRONMENT_URL: 'https://mzhdev.crm4.dynamics.com'
-  CLIENT_ID: 'c07145b8-e4f8-48ad-8a7c-9fe5d3827e52'
-  TENANT_ID: 'd7d483b3-60d3-4211-a15e-9c2a090d2136'
+  ENVIRONMENT_URL: ${{ vars.DEV_ENVIRONMENT_URL }}
+  CLIENT_ID: ${{ vars.CLIENT_ID }}
+  TENANT_ID: ${{ vars.TENANT_ID }}
 permissions:
   contents: write
 jobs:

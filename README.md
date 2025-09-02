@@ -29,29 +29,39 @@ cd solutions
 PowerPlatformSPN = your-service-principal-secret
 ```
 
-**Environment URLs** (Currently hardcoded in workflow files):
+**Repository Variables** (Settings → Secrets and variables → Actions → Variables):
 ```
-DEV: https://mzhdev.crm4.dynamics.com
-BUILD: https://mzhbuild.crm4.dynamics.com  
-TEST: https://mzhtest.crm4.dynamics.com
-PRODUCTION: https://mzhprod.crm11.dynamics.com
-CLIENT_ID: c07145b8-e4f8-48ad-8a7c-9fe5d3827e52
-TENANT_ID: d7d483b3-60d3-4211-a15e-9c2a090d2136
+DEV_ENVIRONMENT_URL = https://mzhdev.crm4.dynamics.com
+BUILD_ENVIRONMENT_URL = https://mzhbuild.crm4.dynamics.com  
+TEST_ENVIRONMENT_URL = https://mzhtest.crm4.dynamics.com
+PRODUCTION_ENVIRONMENT_URL = https://mzhprod.crm11.dynamics.com
+CLIENT_ID = c07145b8-e4f8-48ad-8a7c-9fe5d3827e52
+TENANT_ID = d7d483b3-60d3-4211-a15e-9c2a090d2136
+```
+
+**GitHub Environments** (Settings → Environments):
+```
+DEV = Development environment
+BUILD = Build environment for solution conversion
+TEST = Testing environment with approval gates
+PRODUCTION = Production environment with approval gates
 ```
 
 ### 3. Current Setup Status
 
 **✅ Currently Working:**
 - Export workflows with solution checker validation
+- Repository variables for environment URLs and credentials
+- GitHub environments (DEV, BUILD, TEST, PRODUCTION)
 - Automatic deployment on PR merge to main
 - Quality gates during deployment stages
 - Solution artifacts with retention
 
 **⚠️ Optional Enhancements Available:**
-- GitHub environments with approval gates
+- GitHub environment approval gates (configured but can be customized)
 - Branch protection with required status checks  
 - PR validation workflows
-- Repository variables instead of hardcoded values
+- Advanced approval workflows
 
 ### 4. Start Using
 
@@ -165,23 +175,49 @@ The following features can be enabled for additional control:
 - Result: PRs cannot be merged until validation passes
 
 ### 🔒 Environment Approval Gates
-**Setup**: Create GitHub Environments (Settings → Environments)
+**Status**: ✅ **CONFIGURED** - GitHub Environments are set up and ready
 
-**Step-by-Step Setup:**
+**Current Environment Setup:**
+
+1. **DEV Environment**
+   - **Purpose**: Development work and solution export
+   - **Variables**: `DEV_ENVIRONMENT_URL`
+   - **Protection**: None (direct access for development)
+
+2. **BUILD Environment**
+   - **Purpose**: Converting unmanaged solutions to managed
+   - **Variables**: `BUILD_ENVIRONMENT_URL`
+   - **Protection**: None (automatic conversion process)
+
+3. **TEST Environment**  
+   - **Purpose**: Testing deployed solutions
+   - **Variables**: `TEST_ENVIRONMENT_URL`
+   - **Protection**: Approval gates available (can be configured)
+   - **Current Status**: Ready for deployment
+
+4. **PRODUCTION Environment**
+   - **Purpose**: Live production environment
+   - **Variables**: `PRODUCTION_ENVIRONMENT_URL`
+   - **Protection**: Approval gates available (can be configured)
+   - **Current Status**: Ready for deployment
+
+**Optional: Adding Approval Gates:**
+
+To require manual approval before TEST/PRODUCTION deployments:
 
 1. **Navigate to Repository Settings**
    - Go to your repository on GitHub → Settings tab
    - In left sidebar, click "Environments"
 
-2. **Create TEST Environment**
-   - Click "New environment" → Name: `TEST`
+2. **Configure TEST Environment Protection**
+   - Click on "TEST" environment
    - **Protection Rules**:
      - ✅ Required reviewers: Add team members for TEST approvals
      - ✅ Wait timer: 0 minutes (immediate after approval)
      - ✅ Deployment branches: Restrict to `main` branch only
 
-3. **Create PRODUCTION Environment**  
-   - Click "New environment" → Name: `PRODUCTION`
+3. **Configure PRODUCTION Environment Protection**  
+   - Click on "PRODUCTION" environment
    - **Protection Rules**:
      - ✅ Required reviewers: Add senior team members/release managers
      - ✅ Wait timer: 5-10 minutes (optional safety buffer)
@@ -229,19 +265,21 @@ The following features can be enabled for additional control:
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   DEV           │    │   BUILD          │    │   TEST          │
 │   Environment   │───▶│   Environment    │───▶│   Environment   │
-│                 │    │   (Managed)      │    │                 │
+│   (Variables)   │    │   (Managed)      │    │   (Approval)    │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                                         │
                                                         ▼
                                                ┌─────────────────┐
                                                │   PRODUCTION    │
                                                │   Environment   │
-                                               │                 │
+                                               │   (Approval)    │
                                                └─────────────────┘
 
 Quality Gates:    🔍────────────🔍────────────🔍────────────🔍
                 Export     Convert      Deploy      Release
 
+Repository Variables: All environment URLs and credentials centralized
+GitHub Environments: DEV, BUILD, TEST, PRODUCTION with approval gates
 Automatic Trigger: PR Merge → Main → Auto Deploy to All Environments
 ```
 
@@ -480,9 +518,11 @@ No release tag
 ```bash
 1. Certificates & secrets → New client secret
 2. Copy secret value → Add to GitHub repository secrets as PowerPlatformSPN
+3. Copy CLIENT_ID → Add to GitHub repository variables as CLIENT_ID
+4. Copy TENANT_ID → Add to GitHub repository variables as TENANT_ID
 ```
 
-**Note**: CLIENT_ID and TENANT_ID are currently hardcoded in workflow files.
+**Note**: CLIENT_ID and TENANT_ID are now stored as repository variables for easy management.
 
 ### 4. Power Platform Access:
 ```bash

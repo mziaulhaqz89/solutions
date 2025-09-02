@@ -86,13 +86,22 @@ Uses `microsoft/powerplatform-actions/update-solution-version@v1` which:
 
 ## Implementation Details
 
-### Current Configuration (Hardcoded in Workflows):
+### Repository Variables (Centralized Configuration):
 ```yaml
-BUILD_ENVIRONMENT_URL: 'https://mzhbuild.crm4.dynamics.com'
-TEST_ENVIRONMENT_URL: 'https://mzhtest.crm4.dynamics.com'
-PRODUCTION_ENVIRONMENT_URL: 'https://mzhprod.crm11.dynamics.com'
+DEV_ENVIRONMENT_URL: https://mzhdev.crm4.dynamics.com
+BUILD_ENVIRONMENT_URL: https://mzhbuild.crm4.dynamics.com
+TEST_ENVIRONMENT_URL: https://mzhtest.crm4.dynamics.com
+PRODUCTION_ENVIRONMENT_URL: https://mzhprod.crm11.dynamics.com
 CLIENT_ID: c07145b8-e4f8-48ad-8a7c-9fe5d3827e52
 TENANT_ID: d7d483b3-60d3-4211-a15e-9c2a090d2136
+```
+
+### GitHub Environments:
+```yaml
+DEV: Development environment (no protection)
+BUILD: Build environment for solution conversion (no protection)
+TEST: Testing environment (approval gates available)
+PRODUCTION: Production environment (approval gates available)
 ```
 
 ### Repository Secrets Required:
@@ -100,8 +109,11 @@ TENANT_ID: d7d483b3-60d3-4211-a15e-9c2a090d2136
 PowerPlatformSPN: your-service-principal-secret
 ```
 
-### Optional: Convert to Repository Variables
-To make configuration more flexible, these hardcoded values can be moved to repository variables.
+### Configuration Benefits:
+✅ **Centralized Management**: All environment URLs and credentials in one place  
+✅ **Easy Updates**: Change variables without editing workflow files  
+✅ **Environment Isolation**: Separate environments with proper access control  
+✅ **Security**: Sensitive values properly secured in repository variables and secrets
 
 ## Artifact Management
 
