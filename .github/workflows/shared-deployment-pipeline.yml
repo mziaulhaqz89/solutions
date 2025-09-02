@@ -105,7 +105,6 @@ jobs:
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
         path: ${{ inputs.solution_shipping_folder}}/${{ inputs.solution_name }}_managed.zip
-        checker-logs-artifact-name: managed-solution-checker-logs-${{ inputs.solution_name }}
 
     - name: Upload Solution Checker Results
       uses: actions/upload-artifact@v4
@@ -113,9 +112,7 @@ jobs:
       with:
         name: managed-solution-checker-results-${{ inputs.solution_name }}
         path: |
-          **/*-analysis-result.json
-          **/*-analysis-result.xml
-          **/*-analysis-result.zip
+          ../../_temp/PowerAppsChecker/**/*
         retention-days: 30
 
     - name: Upload the ready to ship solution to GH artifact store
@@ -155,7 +152,6 @@ jobs:
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
         path: ${{ inputs.solution_release_folder}}/${{ inputs.solution_name }}_managed.zip
-        checker-logs-artifact-name: test-deployment-checker-logs-${{ inputs.solution_name }}
 
     - name: Upload TEST Solution Checker Results
       uses: actions/upload-artifact@v4
@@ -163,9 +159,7 @@ jobs:
       with:
         name: test-deployment-checker-results-${{ inputs.solution_name }}
         path: |
-          **/*-analysis-result.json
-          **/*-analysis-result.xml
-          **/*-analysis-result.zip
+          ../../_temp/PowerAppsChecker/**/*
         retention-days: 30
         
     - name: Import MANAGED solution to TEST env
@@ -210,7 +204,6 @@ jobs:
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
         path: ${{ inputs.solution_release_folder}}/${{ inputs.solution_name }}_managed.zip
-        checker-logs-artifact-name: prod-deployment-checker-logs-${{ inputs.solution_name }}
 
     - name: Upload PRODUCTION Solution Checker Results
       uses: actions/upload-artifact@v4
@@ -218,9 +211,7 @@ jobs:
       with:
         name: prod-deployment-checker-results-${{ inputs.solution_name }}
         path: |
-          **/*-analysis-result.json
-          **/*-analysis-result.xml
-          **/*-analysis-result.zip
+          ../../_temp/PowerAppsChecker/**/*
         retention-days: 30
         
     - name: Import MANAGED solution to PROD env
