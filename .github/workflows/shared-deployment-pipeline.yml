@@ -112,7 +112,7 @@ jobs:
       with:
         name: managed-solution-checker-results-${{ inputs.solution_name }}
         path: |
-          ../../_temp/PowerAppsChecker/**/*
+          ${{ runner.temp }}/PowerAppsChecker/**/*
         retention-days: 30
 
     - name: Upload the ready to ship solution to GH artifact store
@@ -159,7 +159,7 @@ jobs:
       with:
         name: test-deployment-checker-results-${{ inputs.solution_name }}
         path: |
-          ../../_temp/PowerAppsChecker/**/*
+          ${{ runner.temp }}/PowerAppsChecker/**/*
         retention-days: 30
         
     - name: Import MANAGED solution to TEST env
@@ -211,7 +211,7 @@ jobs:
       with:
         name: prod-deployment-checker-results-${{ inputs.solution_name }}
         path: |
-          ../../_temp/PowerAppsChecker/**/*
+          ${{ runner.temp }}/PowerAppsChecker/**/*
         retention-days: 30
         
     - name: Import MANAGED solution to PROD env

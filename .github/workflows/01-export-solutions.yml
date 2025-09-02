@@ -100,5 +100,5 @@ jobs:
       with:
         name: solution-checker-results-${{ github.event.inputs.solution_name }}
         path: |
-          ../../_temp/PowerAppsChecker/**/*
+          ${{ runner.temp }}/PowerAppsChecker/**/*
         retention-days: 30
