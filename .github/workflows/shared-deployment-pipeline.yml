@@ -11,7 +11,6 @@ on:
       solution_name:
         description: 'The solution name.'
         type: string
-        default: EndeavorSolution       
       solution_shipping_folder:
         description: 'folder name for staging the exported solution *do not change*'        
         type: string
@@ -28,14 +27,6 @@ on:
        description: 'folder where the released binaries are going to be hosted *do not change*'
        type: string
        default: out/release
-      CLIENT_ID: 
-        description: 'The client id'
-        type: string
-        required: true
-      TENANT_ID: 
-        description: 'The tenant id'
-        type: string
-        required: true
     secrets:
       envSecret:
         description: 'The secret value for authentication using SPN'
@@ -67,10 +58,10 @@ jobs:
     - name: Import solution as unmanaged to build env (for conversion only)
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL }}
-        app-id: ${{inputs.CLIENT_ID}}
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.envSecret }}
-        tenant-id: ${{inputs.TENANT_ID}}
+        tenant-id: ${{ vars.TENANT_ID }}
         solution-file: ${{ inputs.solution_outbound_folder}}/${{ inputs.solution_name }}_unmanaged.zip
         force-overwrite: true
         publish-changes: true
@@ -78,10 +69,10 @@ jobs:
     - name: Export solution as managed
       uses: microsoft/powerplatform-actions/export-solution@v1
       with:
-        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL }}
-        app-id: ${{inputs.CLIENT_ID}}
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.envSecret }} 
-        tenant-id: ${{inputs.TENANT_ID}}
+        tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ inputs.solution_name }}
         managed: true
         solution-output-file: ${{ inputs.solution_shipping_folder}}/${{ inputs.solution_name }}_managed.zip
@@ -89,10 +80,10 @@ jobs:
     - name: Run Solution Checker on Managed Solution
       uses: microsoft/powerplatform-actions/check-solution@v1
       with:
-        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL }}
-        app-id: ${{inputs.CLIENT_ID}}
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.envSecret }}
-        tenant-id: ${{inputs.TENANT_ID}}
+        tenant-id: ${{ vars.TENANT_ID }}
         path: ${{ inputs.solution_shipping_folder}}/${{ inputs.solution_name }}_managed.zip
 
     - name: Upload Solution Checker Results
@@ -115,7 +106,7 @@ jobs:
     runs-on: windows-latest
     environment: 
       name: TEST
-      url: ${{ vars.TEST_ENVIRONMENT_URL }}
+      url: ${{ vars.ENVIRONMENT_URL }}
     env:
       RUNNER_DEBUG: 1
 
@@ -136,10 +127,10 @@ jobs:
     - name: Import MANAGED solution to TEST env
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: ${{ vars.TEST_ENVIRONMENT_URL }}
-        app-id: ${{inputs.CLIENT_ID}}
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.envSecret }}
-        tenant-id: ${{inputs.TENANT_ID}}
+        tenant-id: ${{ vars.TENANT_ID }}
         solution-file: ${{ inputs.solution_release_folder}}/${{ inputs.solution_name }}_managed.zip
         force-overwrite: true
         publish-changes: true
@@ -149,7 +140,7 @@ jobs:
     runs-on: windows-latest
     environment: 
       name: PRODUCTION
-      url: ${{ vars.PRODUCTION_ENVIRONMENT_URL }}
+      url: ${{ vars.ENVIRONMENT_URL }}
     env:
       RUNNER_DEBUG: 1
 
@@ -170,10 +161,10 @@ jobs:
     - name: Import MANAGED solution to PROD env
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: ${{ vars.PRODUCTION_ENVIRONMENT_URL }}
-        app-id: ${{inputs.CLIENT_ID}}
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.envSecret }}
-        tenant-id: ${{inputs.TENANT_ID}}
+        tenant-id: ${{ vars.TENANT_ID }}
         solution-file: ${{ inputs.solution_release_folder}}/${{ inputs.solution_name }}_managed.zip
         force-overwrite: true
         publish-changes: true

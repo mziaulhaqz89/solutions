@@ -16,8 +16,6 @@ jobs:
   deploy-coffeeshop-solution:
     uses: ./.github/workflows/shared-deployment-pipeline.yml
     with:
-      solution_name: coffeeshop
-      CLIENT_ID: ${{ vars.CLIENT_ID }}
-      TENANT_ID: ${{ vars.TENANT_ID }}      
+      solution_name: coffeeshop   
     secrets:
       envSecret: ${{ secrets.PowerPlatformSPN }}

@@ -18,8 +18,6 @@ jobs:
   deploy-travel-solution:
     uses: ./.github/workflows/shared-deployment-pipeline.yml
     with:
-      solution_name: travelsolution
-      CLIENT_ID: ${{ vars.CLIENT_ID }}
-      TENANT_ID: ${{ vars.TENANT_ID }}      
+      solution_name: travelsolution    
     secrets:
       envSecret: ${{ secrets.PowerPlatformSPN }}
