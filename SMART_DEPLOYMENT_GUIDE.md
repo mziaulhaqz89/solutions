@@ -29,7 +29,39 @@ The enhanced `release-action-call.yml` automatically detects which solution was 
          ▼
 ┌─────────────────┐
 │ Deploy Solution │ ──► BUILD → TEST → PROD
-└─────────────────┘
+└─────────────────┘      │      │      │
+                         ▼      ▼      ▼
+                    ┌─────────────────────┐
+                    │ Solution Checker    │
+                    │ Quality Gates       │
+                    └─────────────────────┘
+```
+
+## 🔍 Quality Gates Integration
+
+Each deployment includes **automated solution validation** at three critical points:
+
+### 1. Convert-to-Managed Stage
+- **Purpose**: Validates solution during packaging process
+- **Timing**: Before converting unmanaged to managed solution
+- **Action**: Creates managed solution package with validation
+
+### 2. Deploy-to-Test Stage  
+- **Purpose**: Validates solution before TEST environment deployment
+- **Timing**: After successful packaging, before TEST deployment
+- **Action**: Ensures solution quality before reaching TEST environment
+
+### 3. Release-to-Production Stage
+- **Purpose**: Final validation before PRODUCTION deployment
+- **Timing**: After successful TEST deployment, before PRODUCTION
+- **Action**: Last quality gate before production release
+
+### Quality Gate Benefits:
+✅ **Continuous Validation**: Solutions checked at every deployment stage  
+✅ **Early Issue Detection**: Problems caught before reaching environments  
+✅ **Artifact Storage**: Validation results saved for review (30-day retention)  
+✅ **Automated Process**: No manual intervention required  
+✅ **Audit Trail**: Complete validation history maintained
 ```
 
 ## 📋 Detection Logic

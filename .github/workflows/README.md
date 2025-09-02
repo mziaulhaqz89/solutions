@@ -8,6 +8,9 @@ This repository contains GitHub Actions workflows for Power Platform ALM (Applic
 ✅ **Semantic Versioning**: Supports release tags (v1.2.3) and auto-increment based on build numbers  
 ✅ **Version Tracking**: Each deployment has a unique version for proper release management  
 ✅ **Artifact Management**: Versioned artifacts for easy rollback and auditing  
+✅ **Solution Checker Integration**: Automated quality validation at every deployment stage  
+✅ **Quality Gates**: Three validation checkpoints prevent low-quality solutions from reaching production  
+✅ **Custom Branch Naming**: Flexible branch naming with timestamp generation for exports  
 
 ## Solution Versioning Strategy
 
@@ -79,6 +82,25 @@ Uses `microsoft/powerplatform-actions/update-solution-version@v1` which:
 - Runs solution checker
 - Validates solution packaging
 - Uploads validation artifacts
+
+### 4. `shared-deployment-pipeline.yml`
+**Purpose**: Reusable deployment workflow with comprehensive quality gates.
+
+**Key Features**:
+- **Three Quality Gates**: Validates solutions at convert-to-managed, deploy-to-test, and release-to-production stages
+- **Environment Management**: Supports TEST and PRODUCTION environment deployment with approval gates  
+- **Artifact Management**: Stores solution checker results and deployment artifacts (30-day retention)
+- **Automatic Versioning**: Integrates with solution versioning system
+- **Error Handling**: Comprehensive error handling and logging
+
+**Used By**:
+- `02-deploy-travel-solution.yml`: Calls shared pipeline for travel solution deployment
+- `03-deploy-coffeeshop-solution.yml`: Calls shared pipeline for coffee shop solution deployment
+
+**Quality Gate Details**:
+1. **Convert-to-Managed**: Validates solution during packaging process
+2. **Deploy-to-Test**: Validates before TEST environment deployment
+3. **Release-to-Production**: Final validation before PRODUCTION deployment
 
 ## Setup Instructions
 

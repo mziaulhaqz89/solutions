@@ -17,10 +17,29 @@ This repository supports exporting multiple Power Platform solutions using autom
 2. Go to the **Actions** tab
 3. Select **"Export Power Platform Solution"** workflow
 4. Click **"Run workflow"**
-5. Choose your solution from the dropdown:
-   - `travelsolution`
-   - `coffeeshopsolution`
+5. Configure your export settings:
+   - **Solution names**: Enter solution names (comma-separated for multiple)
+   - **Custom branch name**: Optional - specify your preferred branch name
+   - **Target branch**: Choose target branch (usually `main`)
+   - **Include managed solutions**: Choose whether to include managed solutions
 6. Click **"Run workflow"** to start
+
+#### Branch Naming Options:
+
+**Custom Branch Name:**
+```yaml
+# When you provide a custom name:
+Custom branch name: "feature/coffee-shop-updates"
+# Result: Creates branch named "feature/coffee-shop-updates"
+```
+
+**Auto-Generated Name (Default):**
+```yaml
+# When custom name is left empty:
+Custom branch name: (leave empty)  
+# Result: Creates branch like "solution-export-20241220-143052"
+#         (includes timestamp for uniqueness)
+```
 
 **What happens:**
 - Exports the selected solution from your DEV environment

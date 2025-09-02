@@ -30,7 +30,22 @@ This repository uses **dedicated workflow files** for each solution, making depl
 4. Appropriate deployment workflow triggers automatically
    ↓
 5. Solution deploys: BUILD → TEST → PRODUCTION
+   (With solution checker validation at each stage)
 ```
+
+## 🔍 Quality Gates
+
+Each deployment includes **three solution checker validation points**:
+
+1. **Convert-to-Managed**: Validates solution during packaging
+2. **Deploy-to-Test**: Validates before TEST environment deployment  
+3. **Release-to-Production**: Final validation before PRODUCTION deployment
+
+### Quality Gate Benefits:
+✅ **Early Detection**: Issues caught before reaching environments  
+✅ **Continuous Validation**: Solutions checked at every deployment stage  
+✅ **Artifact Storage**: Validation results saved for review (30-day retention)  
+✅ **Automated Quality**: No manual validation steps required
 
 ### Manual Deployment
 ```bash
@@ -111,10 +126,19 @@ To add a new solution (e.g., `inventory`):
 
 ```
 .github/workflows/
-├── export-power-platform-solution.yml   # Export solutions
+├── export-power-platform-solution.yml   # Export solutions with custom branch naming
 ├── deploy-travelsolution.yml           # Deploy travel solution
 ├── deploy-coffeeshop.yml               # Deploy coffee shop solution  
-└── release-solution-to-prod-with-inputs.yml  # Reusable deployment logic
+├── shared-deployment-pipeline.yml      # Reusable deployment logic with quality gates
+└── pr-validator.yml                    # PR validation with solution checker
 ```
+
+### Shared Deployment Pipeline
+The `shared-deployment-pipeline.yml` provides reusable deployment logic featuring:
+- **Convert-to-Managed**: Packages unmanaged solutions as managed solutions
+- **Deploy-to-Test**: Deploys to TEST environment with approval gates
+- **Release-to-Production**: Deploys to PRODUCTION environment with approval gates
+- **Solution Checker Integration**: Validates solutions at all three stages
+- **Artifact Management**: Stores validation results and deployment logs
 
 This approach follows the **Single Responsibility Principle** - each workflow has one clear job! 🎉
