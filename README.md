@@ -143,28 +143,85 @@ The following features can be enabled for additional control:
 ### 🛡️ PR Validation System
 **Setup**: Create `pr-validator.yml` workflow
 
-**Features**:
-- Auto-detects changed solutions
-- Validates solution structure  
-- Runs solution checker
-- Blocks merge if critical/high issues found
+**What It Would Do:**
+- Auto-detects changed solutions by analyzing git diff
+- Validates solution folder structure and required files
+- Packages solutions to ensure they can be built
+- Runs solution checker on each changed solution
+- Reports validation results as PR status check
+- Blocks merge if critical/high severity issues found
+
+**Setup Steps:**
+1. Create `.github/workflows/pr-validator.yml` workflow file
+2. Configure to trigger on pull requests affecting `solutions/**`
+3. Add solution structure validation logic
+4. Integrate with solution checker for quality analysis
+5. Set up as required status check in branch protection
+
+**Branch Protection Integration:**
+- Repository Settings → Branches → Add rule for `main`
+- Check "Require status checks to pass before merging"  
+- Search and select the PR validator check
+- Result: PRs cannot be merged until validation passes
 
 ### 🔒 Environment Approval Gates
 **Setup**: Create GitHub Environments (Settings → Environments)
+
+**Step-by-Step Setup:**
+
+1. **Navigate to Repository Settings**
+   - Go to your repository on GitHub → Settings tab
+   - In left sidebar, click "Environments"
+
+2. **Create TEST Environment**
+   - Click "New environment" → Name: `TEST`
+   - **Protection Rules**:
+     - ✅ Required reviewers: Add team members for TEST approvals
+     - ✅ Wait timer: 0 minutes (immediate after approval)
+     - ✅ Deployment branches: Restrict to `main` branch only
+
+3. **Create PRODUCTION Environment**  
+   - Click "New environment" → Name: `PRODUCTION`
+   - **Protection Rules**:
+     - ✅ Required reviewers: Add senior team members/release managers
+     - ✅ Wait timer: 5-10 minutes (optional safety buffer)
+     - ✅ Deployment branches: Restrict to `main` branch only
+
+**How Approval Gates Work:**
+- **Convert-to-managed**: Runs automatically (no approval needed)
+- **Deploy-to-test**: Waits for TEST environment reviewers to approve
+- **Release-to-production**: Waits for PRODUCTION environment reviewers to approve
+- Reviewers get notifications and can approve/reject with comments
 
 **Benefits**:
 - Manual approval required before TEST deployment
 - Manual approval required before PRODUCTION deployment
 - Designated reviewers for each environment
-- Audit trail of approvals
+- Complete audit trail of all approvals
+- Email notifications to reviewers
+- Deployment history tracking
 
 ### 🛡️ Branch Protection
 **Setup**: Repository Settings → Branches → Add rule for `main`
 
+**Recommended Protection Rules:**
+- ✅ **Require pull request reviews**: Prevent direct pushes to main
+- ✅ **Require status checks**: Ensure PR validation passes (if implemented)  
+- ✅ **Require branches to be up to date**: Force rebase before merge
+- ✅ **Include administrators**: Apply rules to all users
+- ✅ **Restrict pushes**: Only allow pushes through pull requests
+
+**Best Practices:**
+- **Reviewer Assignment**: Require at least 1-2 reviewers for PRs
+- **Code Owners**: Use CODEOWNERS file for automatic reviewer assignment
+- **Required Status Checks**: Add PR validator when implemented
+- **Linear History**: Enforce clean git history
+
 **Benefits**:
-- Require pull request reviews before merging
-- Require status checks to pass before merging
-- Prevent direct pushes to main branch
+- Prevent accidental direct pushes to main branch
+- Ensure all changes go through code review process  
+- Maintain clean git history and audit trail
+- Integrate with quality gates and validation systems
 
 ## 🏗️ Current Architecture
 
@@ -188,16 +245,48 @@ Quality Gates:    🔍────────────🔍──────
 Automatic Trigger: PR Merge → Main → Auto Deploy to All Environments
 ```
 
+## 📁 Detailed Workflow Reference
+
+### 🔄 Complete Development Process
+
+```
+1. Developer makes changes in Power Platform DEV environment
+   ↓
+2. Run "01-export-solutions.yml" → Select solution → Export + Validate
+   ↓  
+3. Review validation results and merge PR
+   ↓
+4. Auto-trigger "02-deploy-travel-solution.yml" OR "03-deploy-coffeeshop-solution.yml"
+   ↓
+5. Solution deploys through BUILD → TEST → PRODUCTION with quality gates
+```
+
+### 📋 Workflow File Details
+
+| Workflow | Purpose | Trigger | Features |
+|----------|---------|---------|----------|
+| `01-export-solutions.yml` | Export from DEV + Solution Checker | Manual (dropdown) | Multi-solution export, custom branch naming, quality gates |
+| `02-deploy-travel-solution.yml` | Deploy travel solution | Auto on `solutions/travelsolution/**` changes + Manual | Quality gates, automatic deployment |
+| `03-deploy-coffeeshop-solution.yml` | Deploy coffee shop solution | Auto on `solutions/coffeeshop/**` changes + Manual | Quality gates, automatic deployment |
+| `shared-deployment-pipeline.yml` | Reusable deployment logic | Called by other workflows | 3 quality gates, environment deployment |
+
+### 🎯 File Naming Convention
+
+- **`01-`** prefix: Export/source workflows
+- **`02-`**, **`03-`** prefix: Solution-specific deployment workflows  
+- **`shared-`** prefix: Reusable workflows
+- Descriptive names that clearly indicate purpose
+
 ## 📁 Repository Structure
 
 ```
 📦 solutions/
 ├── 📂 .github/workflows/          # All GitHub Actions workflows
 │   ├── 01-export-solutions.yml    # Export with quality gates
-│   ├── 02-deploy-travel-solution.yml
-│   ├── 03-deploy-coffeeshop-solution.yml  
-│   ├── shared-deployment-pipeline.yml     # Reusable pipeline
-│   └── pr-validator.yml           # PR validation
+│   ├── 02-deploy-travel-solution.yml # Travel solution deployment
+│   ├── 03-deploy-coffeeshop-solution.yml # Coffee shop deployment  
+│   ├── shared-deployment-pipeline.yml # Reusable pipeline with quality gates
+│   └── README.md                   # Technical implementation details
 ├── 📂 solutions/                  # Solution source code
 │   ├── 📂 travelsolution/         # Travel solution components
 │   └── 📂 coffeeshop/            # Coffee shop solution components
@@ -281,6 +370,93 @@ No release tag
 - Solution.xml file exists
 - No critical/high issues in solution checker report
 ```
+
+### Additional Troubleshooting
+
+#### 🔍 Environment Issues
+**Environment not found:**
+- Ensure environment names match exactly (case-sensitive: `TEST`, `PRODUCTION`)
+- Check that environments are created in repository settings
+
+**No reviewers assigned:**
+- At least one reviewer must be assigned to each environment
+- Reviewers must have repository access permissions
+
+**Branch restrictions:**
+- Ensure deployment branch (`main`) is allowed in environment settings
+- Check that branch protection rules don't conflict
+
+#### 📊 Viewing Deployment History
+- Go to **Actions** tab in your repository
+- Click on any workflow run to see execution details
+- Check approval history and reviewer comments
+- Download artifacts for detailed logs and reports
+
+#### ⚡ Performance Issues
+**Workflow runs slowly:**
+- Check Power Platform environment performance
+- Verify network connectivity between GitHub and Power Platform
+- Review solution size and complexity
+
+**Solution checker takes long time:**
+- Large solutions require more validation time
+- Complex customizations increase analysis duration
+- Consider breaking large solutions into smaller components
+
+## 🎯 Best Practices
+
+### 📋 Development Workflow Best Practices
+
+**Reviewer Assignment:**
+- **For Basic PRs**: Assign developers and QA team members
+- **For Production Releases**: Assign senior developers, DevOps engineers, or release managers
+- **Code Owners**: Use CODEOWNERS file for automatic reviewer assignment
+
+**Documentation Standards:**
+- Require clear commit messages explaining changes
+- Document deployment notes in PR descriptions
+- Maintain a deployment log/changelog for major releases
+- Include solution checker results review in PR process
+
+**Quality Management:**
+- Review solution checker artifacts before merging PRs
+- Fix critical and high severity issues before deployment
+- Test solutions in DEV environment before export
+- Validate customizations don't break existing functionality
+
+### 🔒 Security Best Practices
+
+**Environment Security:**
+- Use least privilege principle for service principal roles
+- Regularly rotate client secrets (recommended: every 6 months)
+- Monitor workflow runs for suspicious activity
+- Use environment-specific secrets for different Power Platform environments
+
+**Access Control:**
+- Restrict repository access to authorized team members
+- Use branch protection to prevent unauthorized changes
+- Implement approval gates for production deployments
+- Regular access review and cleanup of inactive users
+
+**Monitoring and Alerts:**
+- Set up monitoring for both TEST and PRODUCTION environments
+- Configure alerts for deployment failures
+- Monitor solution checker results for quality trends
+- Track deployment frequency and success rates
+
+### ⏰ Operational Best Practices
+
+**Deployment Timing:**
+- Schedule PRODUCTION deployments during low-usage periods
+- Avoid deployments during business-critical periods
+- Consider time zones for global teams
+- Plan rollback procedures before major deployments
+
+**Environment Management:**
+- Keep DEV, TEST, and PRODUCTION environments in sync for metadata
+- Regularly backup production data before deployments
+- Test rollback procedures in non-production environments
+- Document environment-specific configurations
 
 ## 🔧 Service Principal Setup
 
