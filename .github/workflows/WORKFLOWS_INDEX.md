@@ -24,8 +24,15 @@ This directory contains all GitHub Actions workflows for Power Platform solution
 ### 3. Shared Components
 - **`shared-deployment-pipeline.yml`** - Reusable deployment logic
   - Called by deployment workflows
-  - Handles BUILD → TEST → PRODUCTION pipeline
+  - Handles BUILD → TEST → PRODUCTION pipeline with quality gates
+  - **Three solution checker validation points**
   - Contains environment URLs and deployment steps
+
+### 4. Validation Workflows
+- **`pr-validator.yml`** - PR validation with solution checker
+  - Auto-triggers on PRs affecting `solutions/**`
+  - Validates solution structure and quality
+  - Blocks merge if critical/high issues found
 
 ## 🔄 Complete Workflow Process
 
@@ -54,8 +61,9 @@ This directory contains all GitHub Actions workflows for Power Platform solution
 | Workflow | Purpose | Trigger |
 |----------|---------|---------|
 | `01-export-solutions.yml` | Export from DEV + Solution Checker | Manual (dropdown) |
-| `02-deploy-travel-solution.yml` | Deploy travel solution | Auto on path change + Manual |
-| `03-deploy-coffeeshop-solution.yml` | Deploy coffeeshop solution | Auto on path change + Manual |
-| `shared-deployment-pipeline.yml` | Reusable deployment logic | Called by other workflows |
+| `02-deploy-travel-solution.yml` | Deploy travel solution with quality gates | Auto on path change + Manual |
+| `03-deploy-coffeeshop-solution.yml` | Deploy coffeeshop solution with quality gates | Auto on path change + Manual |
+| `shared-deployment-pipeline.yml` | Reusable deployment logic with 3 quality gates | Called by other workflows |
+| `pr-validator.yml` | PR validation with solution checker | Auto on PRs affecting solutions/ |
 
 This structure makes it immediately clear what each workflow does and in what order they typically execute! 🎉

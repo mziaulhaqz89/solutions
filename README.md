@@ -1,260 +1,353 @@
-# Power Platform Solution Management
+# Power Platform ALM with GitHub Actions
 
-This repository contains GitHub Actions workflows for comprehensive Power Platform solution management, including export, deployment, and release management with environment-based approval gates.
+Complete automated Application Lifecycle Management (ALM) for Power Platform solutions using GitHub Actions with quality gates, environment approvals, and solution validation.
 
-## Setup
+## 🎯 What This Repository Does
 
-### 1. Required Secrets
+✅ **Export Solutions**: Automated export from DEV environment with custom branch naming  
+✅ **Quality Gates**: Solution checker validation at every deployment stage  
+✅ **Deployment Pipeline**: Automated TEST → PRODUCTION deployment with approval gates  
+✅ **PR Validation**: Automatic solution validation on pull requests  
+✅ **Version Management**: Semantic versioning with release tag support  
+✅ **Artifact Management**: Solution artifacts with 30-day retention
 
-You need to configure the following secrets in your GitHub repository:
+## 🚀 Quick Start
 
-1. Go to your repository settings
-2. Navigate to "Secrets and variables" > "Actions"
-3. Add the following repository secrets:
+### 1. Repository Setup
+```bash
+# Clone this repository
+git clone https://github.com/mziaulhaqz89/solutions.git
+cd solutions
 
-| Secret Name | Description | How to Get |
-|-------------|-------------|------------|
-| `PowerPlatformSPN` | Azure AD App Registration Client Secret | Generate a client secret in your App Registration |
-
-**Note**: The workflows use predefined environment URLs and client configurations. Update the workflow files with your specific environment URLs and client IDs.
-
-### 2. Azure AD App Registration Setup
-
-1. **Create App Registration:**
-   - Go to Azure Portal > Azure Active Directory > App registrations
-   - Click "New registration"
-   - Name: "GitHub Actions Power Platform"
-   - Supported account types: "Accounts in this organizational directory only"
-   - Redirect URI: Leave blank
-   - Click "Register"
-
-2. **Configure API Permissions:**
-   - In your app registration, go to "API permissions"
-   - Click "Add a permission"
-   - Select "Dynamics CRM"
-   - Select "Delegated permissions"
-   - Check "user_impersonation"
-   - Click "Add permissions"
-   - Click "Grant admin consent"
-
-3. **Create Client Secret:**
-   - Go to "Certificates & secrets"
-   - Click "New client secret"
-   - Add description and set expiration
-   - Copy the secret value (this is your `POWER_PLATFORM_CLIENT_SECRET`)
-
-4. **Get Application ID:**
-   - Go to "Overview"
-   - Copy the "Application (client) ID" (this is your `POWER_PLATFORM_APP_ID`)
-
-5. **Get Tenant ID:**
-   - In Azure AD overview, copy the "Tenant ID" (this is your `POWER_PLATFORM_TENANT_ID`)
-
-### 3. Power Platform User Setup
-
-The service principal needs to be added as a user in your Power Platform environment:
-
-1. Go to Power Platform Admin Center
-2. Select your environment
-3. Go to "Settings" > "Users + permissions" > "Application users"
-4. Click "New app user"
-5. Select your app registration
-6. Assign appropriate security roles (System Administrator for full access)
-
-## Workflows
-
-This repository contains several GitHub Actions workflows:
-
-### 1. Export Power Platform Solution (`export-power-platform-solution.yml`)
-- **Purpose**: Export and unpack solutions from DEV environment
-- **Trigger**: Manual workflow dispatch
-- **Features**:
-  - Exports solution from DEV environment
-  - Unpacks solution for source control
-  - Creates feature branch with changes
-  - Automatically commits solution files
-
-### 2. Release Solution to Production (`release-solution-to-prod-with-inputs.yml`)
-- **Purpose**: Deploy solutions through TEST and PRODUCTION environments with approval gates
-- **Trigger**: Called by release-action-call.yml
-- **Features**:
-  - Converts unmanaged solution to managed
-  - **Environment-based approval gates**
-  - Deploys to TEST environment (requires approval)
-  - Deploys to PRODUCTION environment (requires approval)
-  - Artifact management between stages
-
-### 3. Release Action Call (`release-action-call.yml`)
-- **Purpose**: Triggers the release workflow
-- **Trigger**: Manual workflow dispatch or GitHub release creation
-- **Features**:
-  - Calls the reusable release workflow
-  - Configured with specific environment URLs
-
-### 4. Test Action (`test.yml`)
-- **Purpose**: Basic testing workflow
-- **Trigger**: Manual workflow dispatch
-
-## Environment-Based Deployment
-
-### 🔒 Approval Gates
-
-The release workflow now includes approval gates for controlled deployments:
-
-1. **Build Phase**: Convert solution to managed (automatic)
-2. **⏸️ TEST Approval Gate**: Requires manual approval before TEST deployment
-3. **TEST Deployment**: Deploys to TEST environment after approval
-4. **⏸️ PRODUCTION Approval Gate**: Requires manual approval before PRODUCTION deployment  
-5. **PRODUCTION Deployment**: Final deployment after approval
-
-### Environment Configuration
-
-To set up approval gates, you need to configure GitHub environments:
-
-1. Go to Repository → Settings → Environments
-2. Create environments: `TEST` and `PRODUCTION`
-3. Configure protection rules and required reviewers
-4. See `.github/ENVIRONMENT_SETUP.md` for detailed setup instructions
-
-### Current Environment URLs
-- **DEV**: `https://mzhdev.crm4.dynamics.com`
-- **BUILD**: `https://mzhbuild.crm4.dynamics.com`
-- **TEST**: `https://mzhtest.crm4.dynamics.com`
-- **PRODUCTION**: `https://mzhprod.crm11.dynamics.com`
-
-## Usage
-
-### 1. Export Solution from DEV
-1. Go to your repository on GitHub
-2. Click "Actions" tab
-3. Select "export-and-branch-solution" workflow
-4. Click "Run workflow"
-5. Enter the solution name (default: `travelsolution`)
-6. The workflow will:
-   - Export solution from DEV environment
-   - Unpack the solution
-   - Create a feature branch with changes
-   - Commit the unpacked solution files
-
-### 2. Release to TEST and PRODUCTION
-1. Create a GitHub release, or
-2. Manually trigger "Release action" workflow
-3. The workflow will:
-   - Convert solution to managed
-   - **Wait for TEST approval** ⏸️
-   - Deploy to TEST environment after approval ✅
-   - **Wait for PRODUCTION approval** ⏸️  
-   - Deploy to PRODUCTION environment after approval ✅
-
-### 3. Approval Process
-When the workflow reaches an approval gate:
-1. Designated reviewers receive notifications
-2. Reviewers can view the deployment details
-3. Reviewers approve or reject the deployment
-4. Workflow continues only after approval
-
-## Workflow Features
-
-- **Export Solutions**: Downloads solutions from Power Platform DEV environment
-- **Unpack Solutions**: Extracts solution components for source control
-- **Source Control**: Commits unpacked solution files to the repository with automatic branching
-- **Managed Solution Conversion**: Converts unmanaged solutions to managed for deployment
-- **Environment-Based Deployment**: Supports DEV → TEST → PRODUCTION promotion
-- **Approval Gates**: Manual approval required before TEST and PRODUCTION deployments
-- **Artifact Management**: Uploads solution ZIP files as GitHub artifacts between stages
-- **Release Management**: Integration with GitHub releases for deployment triggers
-- **Multi-Environment Support**: Separate environments for development, testing, and production
-
-## Directory Structure
-
-After running the workflows, your repository will have:
-
-```
-.github/
-├── workflows/           # GitHub Actions workflow files
-│   ├── export-power-platform-solution.yml
-│   ├── release-solution-to-prod-with-inputs.yml
-│   ├── release-action-call.yml
-│   └── test.yml
-└── ENVIRONMENT_SETUP.md # Environment configuration guide
-
-solutions/
-└── travelsolution/      # Unpacked solution source files
-    ├── Entities/
-    │   ├── mzh_destination/
-    │   └── mzh_travel/
-    └── Other/
-        ├── Customizations.xml
-        ├── Relationships.xml
-        └── Solution.xml
-
-out/                     # Temporary build artifacts (not committed)
-├── exported/           # Exported solution ZIP files
-├── solutions/          # Staged unpacked solutions
-├── ship/              # Managed solution artifacts
-└── release/           # Final release artifacts
+# Repository is ready to use - all workflows are pre-configured!
 ```
 
-## Troubleshooting
+### 2. Configure Secrets & Variables
 
-### Common Issues
+**Required Repository Secrets** (Settings → Secrets and variables → Actions):
+```
+PowerPlatformSPN = your-service-principal-secret
+```
 
-1. **Authentication Failed**
-   - Verify `PowerPlatformSPN` secret is correctly configured
-   - Ensure the app registration has proper permissions
-   - Check that the service principal is added to Power Platform
+**Required Repository Variables** (Settings → Secrets and variables → Actions → Variables):
+```
+DEV_ENVIRONMENT_URL = https://mzhdev.crm4.dynamics.com
+BUILD_ENVIRONMENT_URL = https://mzhbuild.crm4.dynamics.com  
+TEST_ENVIRONMENT_URL = https://mzhtest.crm4.dynamics.com
+PRODUCTION_ENVIRONMENT_URL = https://mzhprod.crm11.dynamics.com
+CLIENT_ID = your-service-principal-client-id
+TENANT_ID = your-azure-tenant-id
+```
 
-2. **Solution Not Found**
-   - Verify the solution name is correct (case-sensitive)
-   - Ensure the solution exists in the specified environment
-   - Check solution is in the DEV environment for exports
+### 3. Set Up Approval Gates
 
-3. **Permission Denied**
-   - Ensure the service principal has appropriate security roles
-   - Check that API permissions are granted in Azure AD
+**Create GitHub Environments** (Settings → Environments):
+1. Create `TEST` environment → Add required reviewers
+2. Create `PRODUCTION` environment → Add required reviewers  
+3. Restrict to `main` branch only
 
-4. **Approval Gate Issues**
-   - Verify GitHub environments (`TEST`, `PRODUCTION`) are configured
-   - Ensure required reviewers are assigned to environments
-   - Check that reviewers have proper repository permissions
+### 4. Start Using
 
-5. **Deployment Stuck on Approval**
-   - Check if approval notifications were sent to reviewers
-   - Verify reviewers are available and aware of pending approvals
-   - Review environment protection rules configuration
+**Export Solutions:**
+1. Actions → "Export Power Platform Solution" → Run workflow
+2. Choose solution name, custom branch name (optional)
+3. Creates PR with solution changes
 
-### Debug Steps
+**Deploy Solutions:**
+1. Merge PR to `main` branch
+2. Automatic deployment: BUILD → TEST (approval) → PROD (approval)
+3. Quality gates validate at each stage
 
-1. Check the workflow run logs in GitHub Actions
-2. Verify environment URL format (should include protocol and trailing slash)
-3. Test authentication using Power Platform CLI locally
-4. Ensure solution is not currently being edited by someone else
-5. For approval issues, check repository Settings → Environments
-6. Review approval history in workflow run details
+## 📋 Available Workflows
 
-## Configuration
+### 1. 🔄 Export Power Platform Solution
+**File**: `01-export-solutions.yml`  
+**Purpose**: Export solutions from DEV and create PR
 
-### Environment URLs
-Update the following URLs in your workflow files to match your Power Platform environments:
+**Features**:
+- Multi-solution export (comma-separated)
+- Custom branch naming or auto-generated timestamps
+- Solution checker validation
+- Automatic PR creation
 
-**In `export-power-platform-solution.yml`:**
-- `ENVIRONMENT_URL`: Your DEV environment URL
-- `CLIENT_ID`: Your Azure AD app registration client ID  
-- `TENANT_ID`: Your Azure AD tenant ID
+**Usage**:
+```yaml
+Solution names: travelsolution,coffeeshop
+Custom branch name: feature/my-updates  # Optional
+Target branch: main
+Include managed: false
+```
 
-**In `release-action-call.yml`:**
-- `BUILD_ENVIRONMENT_URL`: Environment used for solution conversion
-- `TEST_ENVIRONMENT_URL`: TEST environment URL
-- `PRODUCTION_ENVIRONMENT_URL`: PRODUCTION environment URL
-- `CLIENT_ID` and `TENANT_ID`: Same as above
+### 2. 🚢 Deploy Travel Solution  
+**File**: `02-deploy-travel-solution.yml`  
+**Purpose**: Deploy travel solution through all environments
 
-### Solution Configuration
-- Default solution name: `travelsolution`
-- Update `solution_name` parameter in workflows if using a different solution
+**Triggers**:
+- Push to `main` when `solutions/travelsolution/**` changes
+- Manual workflow dispatch
+- Release creation
 
-## Security Best Practices
+### 3. ☕ Deploy Coffee Shop Solution
+**File**: `03-deploy-coffeeshop-solution.yml`  
+**Purpose**: Deploy coffee shop solution through all environments  
 
-- Use least privilege principle for service principal roles
-- Regularly rotate client secrets
-- Monitor workflow runs for suspicious activity
-- Use environment-specific secrets for different Power Platform environments
+**Triggers**:
+- Push to `main` when `solutions/coffeeshop/**` changes
+- Manual workflow dispatch
+
+### 4. 🔍 PR Validator
+**File**: `pr-validator.yml`  
+**Purpose**: Validate solutions on pull requests
+
+**Features**:
+- Auto-detects changed solutions
+- Validates solution structure
+- Runs solution checker
+- Blocks merge if critical/high issues found
+
+### 5. 🏗️ Shared Deployment Pipeline
+**File**: `shared-deployment-pipeline.yml`  
+**Purpose**: Reusable deployment workflow with quality gates
+
+**Stages**:
+1. **Convert-to-Managed**: Package + validate solution
+2. **Deploy-to-Test**: Deploy to TEST + validate (requires approval)  
+3. **Release-to-Production**: Deploy to PROD + validate (requires approval)
+
+## 🔍 Quality Gates System
+
+### Three Validation Checkpoints:
+
+#### 1. Convert-to-Managed Stage
+- **When**: During solution packaging
+- **Purpose**: Validate solution structure and components
+- **Action**: Creates managed solution with validation
+
+#### 2. Deploy-to-Test Stage  
+- **When**: Before TEST environment deployment
+- **Purpose**: Ensure solution quality before TEST
+- **Action**: Final check before TEST deployment
+
+#### 3. Release-to-Production Stage
+- **When**: Before PRODUCTION deployment  
+- **Purpose**: Final validation before production release
+- **Action**: Last quality gate before PROD
+
+### Quality Gate Benefits:
+✅ **Early Detection**: Issues caught before reaching environments  
+✅ **Continuous Validation**: Solutions checked at every stage  
+✅ **Artifact Storage**: Validation results saved (30-day retention)  
+✅ **Automated Process**: No manual steps required
+
+## 🛡️ PR Validation System
+
+### Automatic PR Checks:
+1. **Structure Validation**: Verifies solution folder structure
+2. **Packaging Test**: Ensures solution can be packaged
+3. **Solution Checker**: Runs comprehensive quality analysis
+4. **Merge Protection**: Blocks merge if critical/high issues found
+
+### Setting Up Required Status Checks:
+1. Repository Settings → Branches → Add rule for `main`
+2. Check "Require status checks to pass before merging"
+3. Search and select: `validate-pr`
+4. Save changes
+
+**Result**: PRs cannot be merged until validation passes! 🛡️
+
+## 🏗️ Architecture Overview
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   DEV           │    │   BUILD          │    │   TEST          │
+│   Environment   │───▶│   Environment    │───▶│   Environment   │
+│                 │    │   (Managed)      │    │   (Approval)    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                        │
+                                                        ▼
+                                               ┌─────────────────┐
+                                               │   PRODUCTION    │
+                                               │   Environment   │
+                                               │   (Approval)    │
+                                               └─────────────────┘
+
+Quality Gates:    🔍────────────🔍────────────🔍────────────🔍
+                Export     Convert      Deploy      Release
+```
+
+## 📁 Repository Structure
+
+```
+📦 solutions/
+├── 📂 .github/workflows/          # All GitHub Actions workflows
+│   ├── 01-export-solutions.yml    # Export with quality gates
+│   ├── 02-deploy-travel-solution.yml
+│   ├── 03-deploy-coffeeshop-solution.yml  
+│   ├── shared-deployment-pipeline.yml     # Reusable pipeline
+│   └── pr-validator.yml           # PR validation
+├── 📂 solutions/                  # Solution source code
+│   ├── 📂 travelsolution/         # Travel solution components
+│   └── 📂 coffeeshop/            # Coffee shop solution components
+├── 📄 README.md                  # This comprehensive guide
+└── 📄 .gitignore                # Git ignore rules
+```
+
+## 🎛️ Advanced Configuration
+
+### Custom Branch Naming
+```yaml
+# Auto-generated (default):
+Custom branch name: (empty)
+# Result: "solution-export-20250902-143052"
+
+# Custom naming:
+Custom branch name: "feature/travel-updates"  
+# Result: "feature/travel-updates"
+```
+
+### Solution Selection
+```yaml
+# Single solution:
+Solution names: travelsolution
+
+# Multiple solutions:
+Solution names: travelsolution,coffeeshopsolution
+```
+
+### Version Management
+```yaml
+# Release tag approach:
+Create release with tag: v1.2.3
+# Result: Solution version 1.2.3.0
+
+# Auto-increment:
+No release tag
+# Result: Solution version 1.0.0.{run_number}
+```
+
+## 🚨 Troubleshooting Guide
+
+### Common Issues & Solutions:
+
+#### 🔐 Authentication Failed
+```bash
+# Check:
+- PowerPlatformSPN secret configured correctly
+- Service principal has Power Platform access  
+- Environment URLs are correct format
+```
+
+#### 🏗️ Solution Export Failed
+```bash
+# Check:
+- Solution exists in DEV environment
+- Solution name spelling is exact (case-sensitive)
+- No concurrent edits in Power Platform
+```
+
+#### ⏸️ Approval Gate Stuck
+```bash
+# Check:
+- TEST/PRODUCTION environments created in GitHub
+- Required reviewers assigned to environments
+- Reviewers have repository access
+```
+
+#### ❌ Quality Gate Failed
+```bash
+# Check:
+- Solution Checker artifacts for detailed error report
+- Download validation results from workflow artifacts
+- Fix critical/high severity issues before retry
+```
+
+#### 🔄 PR Validation Failed
+```bash
+# Check:
+- Solution folder structure is correct
+- Solution.xml file exists
+- No critical/high issues in solution checker report
+```
+
+## 🔧 Service Principal Setup
+
+### 1. Azure AD App Registration:
+```bash
+1. Azure Portal → Azure AD → App registrations → New registration
+2. Name: "GitHub Actions Power Platform"
+3. Account types: "Single tenant"
+4. Redirect URI: (leave blank)
+5. Register
+```
+
+### 2. Configure Permissions:
+```bash
+1. API permissions → Add permission → Dynamics CRM
+2. Delegated permissions → user_impersonation
+3. Grant admin consent
+```
+
+### 3. Create Secret:
+```bash
+1. Certificates & secrets → New client secret
+2. Copy secret value → Add to GitHub repository secrets as PowerPlatformSPN
+3. Copy Application ID → Add to repository variables as CLIENT_ID
+4. Copy Tenant ID → Add to repository variables as TENANT_ID
+```
+
+### 4. Power Platform Access:
+```bash
+1. Power Platform Admin Center → Environment → Settings
+2. Users + permissions → Application users → New app user
+3. Select app registration → Assign System Administrator role
+```
+
+## 📊 Workflow Comparison
+
+| Feature | Manual Process | This Repository |
+|---------|---------------|-----------------|
+| **Export** | Manual download | ✅ Automated with PR |
+| **Validation** | Manual testing | ✅ Automated quality gates |
+| **Deployment** | Manual steps | ✅ Automated pipeline |
+| **Approvals** | Email/manual | ✅ GitHub approval gates |
+| **Audit Trail** | Limited | ✅ Complete GitHub history |
+| **Rollback** | Complex | ✅ Git-based rollback |
+
+## 🎯 Best Practices
+
+### Development Workflow:
+1. **Export** solutions using GitHub Actions (creates PR)
+2. **Review** PR with automatic validation results  
+3. **Merge** PR to trigger automated deployment
+4. **Approve** TEST deployment when ready
+5. **Approve** PRODUCTION deployment for release
+
+### Quality Management:
+- ✅ Never bypass quality gates  
+- ✅ Fix critical/high issues before merging
+- ✅ Review solution checker artifacts
+- ✅ Use meaningful commit messages
+
+### Release Management:
+- ✅ Create releases for major deployments
+- ✅ Use semantic versioning (v1.2.3)
+- ✅ Document release notes
+- ✅ Coordinate approvals with stakeholders
+
+## 🆘 Support & Documentation
+
+### Getting Help:
+1. **Check workflow logs** in GitHub Actions for detailed error messages
+2. **Download artifacts** from failed runs for solution checker reports
+3. **Review this README** for configuration guidance
+4. **Check environment setup** if approval gates aren't working
+
+### Additional Resources:
+- Microsoft Power Platform CLI documentation
+- GitHub Actions documentation  
+- Power Platform ALM best practices
+- Azure AD app registration guide
+
+---
+
+🎉 **You're all set!** This repository provides enterprise-grade ALM for Power Platform with automated quality gates, deployment pipelines, and approval workflows.
