@@ -10,7 +10,6 @@ This directory contains the technical implementation details for Power Platform 
 | `02-deploy-travel-solution.yml` | Deploy travel solution | See main README |  
 | `03-deploy-coffeeshop-solution.yml` | Deploy coffee shop solution | See main README |
 | `shared-deployment-pipeline.yml` | Reusable deployment pipeline | Technical details below |
-| `pr-validator.yml` | PR validation with solution checker | See main README |
 
 ## Technical Implementation
 
@@ -41,11 +40,13 @@ Reusable workflow that provides the core deployment logic with quality gates.
 
 **Jobs:**
 1. **convert-to-managed**: Packages unmanaged solution as managed + solution checker
-2. **deploy-to-test**: Deploys to TEST environment + solution checker (requires approval)
-3. **release-to-production**: Deploys to PRODUCTION + solution checker (requires approval)
+2. **deploy-to-test**: Deploys to TEST environment + solution checker
+3. **release-to-production**: Deploys to PRODUCTION + solution checker
 
 **Quality Gates Integration:**
 Each job includes solution checker validation with artifact upload to runner temp directory using pattern `${{ runner.temp }}/PowerAppsChecker/**/*`.
+
+**Note**: Currently no approval gates configured - deployments run automatically through all stages.
 
 ### Solution Export (`01-export-solutions.yml`)  
 Exports solutions from DEV environment with quality validation.
@@ -61,21 +62,13 @@ Individual workflows for each solution that call the shared pipeline:
 
 **`02-deploy-travel-solution.yml`:**
 - Monitors `solutions/travelsolution/**` path changes
+- Automatically triggers on push to main when travel solution files change
 - Calls shared pipeline with travel solution parameters
 
 **`03-deploy-coffeeshop-solution.yml`:**  
 - Monitors `solutions/coffeeshop/**` path changes
+- Automatically triggers on push to main when coffee shop solution files change
 - Calls shared pipeline with coffee shop solution parameters
-
-### PR Validation (`pr-validator.yml`)
-Validates solutions on pull requests with automatic solution detection.
-
-**Process:**
-1. Detects changed solutions by analyzing git diff
-2. Validates solution folder structure
-3. Packages solutions for validation
-4. Runs solution checker on each changed solution
-5. Reports validation results and blocks merge if critical/high issues found
 
 ## Solution Versioning Strategy
 
@@ -93,14 +86,13 @@ Uses `microsoft/powerplatform-actions/update-solution-version@v1` which:
 
 ## Implementation Details
 
-### Repository Variables Required:
+### Current Configuration (Hardcoded in Workflows):
 ```yaml
-DEV_ENVIRONMENT_URL: https://mzhdev.crm4.dynamics.com
-BUILD_ENVIRONMENT_URL: https://mzhbuild.crm4.dynamics.com  
-TEST_ENVIRONMENT_URL: https://mzhtest.crm4.dynamics.com
-PRODUCTION_ENVIRONMENT_URL: https://mzhprod.crm11.dynamics.com
-CLIENT_ID: your-service-principal-client-id
-TENANT_ID: your-azure-tenant-id
+BUILD_ENVIRONMENT_URL: 'https://mzhbuild.crm4.dynamics.com'
+TEST_ENVIRONMENT_URL: 'https://mzhtest.crm4.dynamics.com'
+PRODUCTION_ENVIRONMENT_URL: 'https://mzhprod.crm11.dynamics.com'
+CLIENT_ID: c07145b8-e4f8-48ad-8a7c-9fe5d3827e52
+TENANT_ID: d7d483b3-60d3-4211-a15e-9c2a090d2136
 ```
 
 ### Repository Secrets Required:
@@ -108,9 +100,8 @@ TENANT_ID: your-azure-tenant-id
 PowerPlatformSPN: your-service-principal-secret
 ```
 
-### GitHub Environments Required:
-- `TEST`: With required reviewers and branch restrictions
-- `PRODUCTION`: With required reviewers and branch restrictions
+### Optional: Convert to Repository Variables
+To make configuration more flexible, these hardcoded values can be moved to repository variables.
 
 ## Artifact Management
 
