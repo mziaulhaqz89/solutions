@@ -111,31 +111,17 @@ jobs:
       RUNNER_DEBUG: 1
 
     steps:
-    - uses: actions/checkout@v4
-      with:
-        lfs: true
-
-    - name: Install Power Platform CLI
-      uses: microsoft/powerplatform-actions/actions-install@v1
-
-    - name: Fetch the ready to ship solution from GH artifact store
-      uses: actions/download-artifact@v4
-      with:
-        name: managedSolutions
-        path: ${{ inputs.solution_release_folder}}
-        
-    - name: Import MANAGED solution to TEST env
-      uses: microsoft/powerplatform-actions/import-solution@v1
+    - name: Deploy solution to TEST environment
+      uses: ./.github/actions/deploy-solution
       with:
         environment-url: ${{ vars.ENVIRONMENT_URL }}
-        app-id: ${{ vars.CLIENT_ID }}
+        client-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{ vars.TENANT_ID }}
-        solution-file: ${{ inputs.solution_release_folder}}/${{ inputs.solution_name }}_managed.zip
-        force-overwrite: true
-        publish-changes: true
+        solution-name: ${{ inputs.solution_name }}
+        solution-release-folder: ${{ inputs.solution_release_folder }}
 
-  release-to-production:
+  deploy-to-production:
     needs: [ deploy-to-test ]
     runs-on: windows-latest
     environment: 
@@ -145,26 +131,12 @@ jobs:
       RUNNER_DEBUG: 1
 
     steps:
-    - uses: actions/checkout@v4
-      with:
-        lfs: true
-
-    - name: Install Power Platform CLI
-      uses: microsoft/powerplatform-actions/actions-install@v1
-
-    - name: Fetch the ready to ship solution from GH artifact store
-      uses: actions/download-artifact@v4
-      with:
-        name: managedSolutions
-        path: ${{ inputs.solution_release_folder}}
-        
-    - name: Import MANAGED solution to PROD env
-      uses: microsoft/powerplatform-actions/import-solution@v1
+    - name: Deploy solution to PRODUCTION environment
+      uses: ./.github/actions/deploy-solution
       with:
         environment-url: ${{ vars.ENVIRONMENT_URL }}
-        app-id: ${{ vars.CLIENT_ID }}
+        client-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{ vars.TENANT_ID }}
-        solution-file: ${{ inputs.solution_release_folder}}/${{ inputs.solution_name }}_managed.zip
-        force-overwrite: true
-        publish-changes: true
+        solution-name: ${{ inputs.solution_name }}
+        solution-release-folder: ${{ inputs.solution_release_folder }}
