@@ -34,16 +34,12 @@ on:
         required: true
         default: solutions/
         
-env:
-  #edit your values here
-  ENVIRONMENT_URL: ${{ vars.DEV_ENVIRONMENT_URL }}
-  CLIENT_ID: ${{ vars.CLIENT_ID }}
-  TENANT_ID: ${{ vars.TENANT_ID }}
 permissions:
   contents: write
 jobs:
   export-from-dev:
     runs-on: windows-latest
+    environment: DEV
     # or you can say runs-on: ubuntu-latest
     env:
       RUNNER_DEBUG: 1
@@ -59,18 +55,18 @@ jobs:
     - name: who-am-i action
       uses: microsoft/powerplatform-actions/who-am-i@v1
       with:
-        environment-url: ${{env.ENVIRONMENT_URL}}
-        app-id: ${{env.CLIENT_ID}}
+        environment-url: ${{ vars.DEV_ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.PowerPlatformSPN }}
-        tenant-id: ${{env.TENANT_ID}}
+        tenant-id: ${{ vars.TENANT_ID }}
 
     - name: export-solution action
       uses: microsoft/powerplatform-actions/export-solution@v1
       with:
-        environment-url: ${{env.ENVIRONMENT_URL}}
-        app-id: ${{env.CLIENT_ID}}
+        environment-url: ${{ vars.DEV_ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.PowerPlatformSPN }}
-        tenant-id: ${{env.TENANT_ID}}
+        tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ github.event.inputs.solution_name }}
         solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}.zip
 
@@ -100,10 +96,10 @@ jobs:
     - name: Run Solution Checker
       uses: microsoft/powerplatform-actions/check-solution@v1
       with:
-        environment-url: ${{env.ENVIRONMENT_URL}}
-        app-id: ${{env.CLIENT_ID}}
+        environment-url: ${{ vars.DEV_ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.PowerPlatformSPN }}
-        tenant-id: ${{env.TENANT_ID}}
+        tenant-id: ${{ vars.TENANT_ID }}
         path: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}.zip
 
     - name: Upload Solution Checker Results

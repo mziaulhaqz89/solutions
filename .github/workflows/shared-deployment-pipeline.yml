@@ -31,15 +31,15 @@ on:
       BUILD_ENVIRONMENT_URL:
         description: 'Build environment url.'
         type: string
-        required: true      
+        required: false      
       TEST_ENVIRONMENT_URL:
         description: 'Test environment url.'
         type: string
-        required: true
+        required: false
       PRODUCTION_ENVIRONMENT_URL: 
         description: 'Production environment url.'
         type: string
-        required: true
+        required: false
       CLIENT_ID: 
         description: 'The client id'
         type: string
@@ -56,6 +56,7 @@ on:
 jobs:
   convert-to-managed:
     runs-on: windows-latest
+    environment: BUILD
     env:
       RUNNER_DEBUG: 1
 
@@ -78,7 +79,7 @@ jobs:
     - name: Import solution as unmanaged to build env (for conversion only)
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: ${{inputs.BUILD_ENVIRONMENT_URL}}
+        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL || inputs.BUILD_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
@@ -89,7 +90,7 @@ jobs:
     - name: Export solution as managed
       uses: microsoft/powerplatform-actions/export-solution@v1
       with:
-        environment-url: ${{inputs.BUILD_ENVIRONMENT_URL}}
+        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL || inputs.BUILD_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }} 
         tenant-id: ${{inputs.TENANT_ID}}
@@ -100,7 +101,7 @@ jobs:
     - name: Run Solution Checker on Managed Solution
       uses: microsoft/powerplatform-actions/check-solution@v1
       with:
-        environment-url: ${{inputs.BUILD_ENVIRONMENT_URL}}
+        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL || inputs.BUILD_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
@@ -126,7 +127,7 @@ jobs:
     runs-on: windows-latest
     environment: 
       name: TEST
-      url: ${{ inputs.TEST_ENVIRONMENT_URL }}
+      url: ${{ vars.TEST_ENVIRONMENT_URL || inputs.TEST_ENVIRONMENT_URL }}
     env:
       RUNNER_DEBUG: 1
 
@@ -147,7 +148,7 @@ jobs:
     - name: Run Solution Checker before TEST deployment
       uses: microsoft/powerplatform-actions/check-solution@v1
       with:
-        environment-url: ${{inputs.TEST_ENVIRONMENT_URL}}
+        environment-url: ${{ vars.TEST_ENVIRONMENT_URL || inputs.TEST_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
@@ -165,7 +166,7 @@ jobs:
     - name: Import MANAGED solution to TEST env
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: ${{inputs.TEST_ENVIRONMENT_URL}}
+        environment-url: ${{ vars.TEST_ENVIRONMENT_URL || inputs.TEST_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
@@ -178,7 +179,7 @@ jobs:
     runs-on: windows-latest
     environment: 
       name: PRODUCTION
-      url: ${{ inputs.PRODUCTION_ENVIRONMENT_URL }}
+      url: ${{ vars.PRODUCTION_ENVIRONMENT_URL || inputs.PRODUCTION_ENVIRONMENT_URL }}
     env:
       RUNNER_DEBUG: 1
 
@@ -199,7 +200,7 @@ jobs:
     - name: Run Solution Checker before PRODUCTION deployment
       uses: microsoft/powerplatform-actions/check-solution@v1
       with:
-        environment-url: ${{inputs.PRODUCTION_ENVIRONMENT_URL}}
+        environment-url: ${{ vars.PRODUCTION_ENVIRONMENT_URL || inputs.PRODUCTION_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
@@ -217,7 +218,7 @@ jobs:
     - name: Import MANAGED solution to PROD env
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: ${{inputs.PRODUCTION_ENVIRONMENT_URL}}
+        environment-url: ${{ vars.PRODUCTION_ENVIRONMENT_URL || inputs.PRODUCTION_ENVIRONMENT_URL }}
         app-id: ${{inputs.CLIENT_ID}}
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{inputs.TENANT_ID}}
