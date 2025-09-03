@@ -32,14 +32,24 @@ runs:
         name: managedSolutions
         path: ${{ inputs.solution-release-folder }}
 
-    - name: Upgrade MANAGED solution
-      uses: microsoft/powerplatform-actions/upgrade-solution@v1
+    - name: Import solution as holding solution (staging)
+      uses: microsoft/powerplatform-actions/import-solution@v1
       with:
         environment-url: ${{ inputs.environment-url }}
         app-id: ${{ inputs.client-id }}
         client-secret: ${{ inputs.client-secret }}
         tenant-id: ${{ inputs.tenant-id }}
         solution-file: ${{ inputs.solution-release-folder }}/${{ inputs.solution-name }}_managed.zip
+        holding-solution: true
+        publish-changes: false
+
+    - name: Apply solution upgrade
+      uses: microsoft/powerplatform-actions/upgrade-solution@v1
+      with:
+        environment-url: ${{ inputs.environment-url }}
+        app-id: ${{ inputs.client-id }}
+        client-secret: ${{ inputs.client-secret }}
+        tenant-id: ${{ inputs.tenant-id }}
         solution-name: ${{ inputs.solution-name }}
         async: true
         max-async-wait-time: 60

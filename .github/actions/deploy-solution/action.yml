@@ -40,5 +40,6 @@ runs:
         client-secret: ${{ inputs.client-secret }}
         tenant-id: ${{ inputs.tenant-id }}
         solution-file: ${{ inputs.solution-release-folder }}/${{ inputs.solution-name }}_managed.zip
+        holding-solution: true
         stage-and-upgrade: true
         publish-changes: true
