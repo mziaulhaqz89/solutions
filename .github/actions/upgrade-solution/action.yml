@@ -1,0 +1,43 @@
+name: 'Upgrade Solution'
+description: 'Upgrade a managed solution in a Power Platform environment'
+inputs:
+  environment-url:
+    description: 'Power Platform environment URL'
+    required: true
+  client-id:
+    description: 'Azure AD application client ID'
+    required: true
+  client-secret:
+    description: 'Azure AD application client secret'
+    required: true
+  tenant-id:
+    description: 'Azure AD tenant ID'
+    required: true
+  solution-name:
+    description: 'Name of the solution to upgrade'
+    required: true
+  solution-release-folder:
+    description: 'Folder containing the solution file'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Power Platform CLI
+      uses: microsoft/powerplatform-actions/actions-install@v1
+
+    - name: Fetch the ready to ship solution from GH artifact store
+      uses: actions/download-artifact@v4
+      with:
+        name: managedSolutions
+        path: ${{ inputs.solution-release-folder }}
+
+    - name: Upgrade MANAGED solution
+      uses: microsoft/powerplatform-actions/upgrade-solution@v1
+      with:
+        environment-url: ${{ inputs.environment-url }}
+        app-id: ${{ inputs.client-id }}
+        client-secret: ${{ inputs.client-secret }}
+        tenant-id: ${{ inputs.tenant-id }}
+        solution-file: ${{ inputs.solution-release-folder }}/${{ inputs.solution-name }}_managed.zip
+        publish-changes: true
