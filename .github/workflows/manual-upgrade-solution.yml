@@ -2,6 +2,8 @@ name: Manual Solution Upgrade
 # Manual workflow to upgrade any solution to TEST and PRODUCTION environments  
 # Can be triggered manually with solution selection
 
+run-name: Upgrade ${{ github.event.inputs.solution_name }} to ${{ github.event.inputs.target_environment }}
+
 on:
   workflow_dispatch:
     inputs:
@@ -27,9 +29,9 @@ permissions:
   contents: write
 
 jobs:
-  manual-upgrade:
+  convert-to-managed:
     runs-on: windows-latest
-    environment: ${{ github.event.inputs.target_environment == 'BOTH' && 'TEST' || github.event.inputs.target_environment }}
+    environment: BUILD
     env:
       RUNNER_DEBUG: 1
 
@@ -51,7 +53,7 @@ jobs:
     - name: Import to BUILD environment for managed conversion
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
-        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL }}
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
         app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.PowerPlatformSPN }}
         tenant-id: ${{ vars.TENANT_ID }}
@@ -62,7 +64,7 @@ jobs:
     - name: Export solution as managed
       uses: microsoft/powerplatform-actions/export-solution@v1
       with:
-        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL }}
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
         app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.PowerPlatformSPN }}
         tenant-id: ${{ vars.TENANT_ID }}
@@ -70,7 +72,26 @@ jobs:
         managed: true
         solution-output-file: out/ship/${{ github.event.inputs.solution_name }}_managed.zip
 
-    - name: Upgrade solution using upgrade-solution action
+    - name: Upload the managed solution artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: managedSolutions
+        path: out/ship/
+
+  upgrade-to-test:
+    if: github.event.inputs.target_environment == 'TEST' || github.event.inputs.target_environment == 'BOTH'
+    needs: [ convert-to-managed ]
+    runs-on: windows-latest
+    environment: TEST
+    env:
+      RUNNER_DEBUG: 1
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Upgrade solution in TEST environment
       uses: ./.github/actions/upgrade-solution
       with:
         environment-url: ${{ vars.ENVIRONMENT_URL }}
@@ -81,8 +102,8 @@ jobs:
         solution-release-folder: out/ship
 
   upgrade-to-production:
-    if: github.event.inputs.target_environment == 'BOTH'
-    needs: [ manual-upgrade ]
+    if: github.event.inputs.target_environment == 'PRODUCTION' || github.event.inputs.target_environment == 'BOTH'
+    needs: [ convert-to-managed, upgrade-to-test ]
     runs-on: windows-latest
     environment: PRODUCTION
     env:
@@ -93,7 +114,7 @@ jobs:
       with:
         lfs: true
 
-    - name: Upgrade solution to PRODUCTION
+    - name: Upgrade solution in PRODUCTION environment
       uses: ./.github/actions/upgrade-solution
       with:
         environment-url: ${{ vars.ENVIRONMENT_URL }}
