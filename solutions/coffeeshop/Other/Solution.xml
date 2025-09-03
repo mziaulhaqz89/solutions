@@ -6,7 +6,7 @@
       <LocalizedName description="Coffee Shop" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.14</Version>
+    <Version>1.0.0.15</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>mzh</UniqueName>
@@ -83,9 +83,13 @@
       <RootComponent type="1" schemaName="mzh_coffeeshop" behavior="0" />
       <RootComponent type="1" schemaName="mzh_employee" behavior="0" />
       <RootComponent type="1" schemaName="mzh_order" behavior="0" />
-      <RootComponent type="1" schemaName="mzh_product" behavior="0" />
       <RootComponent type="1" schemaName="systemuser" behavior="2" />
     </RootComponents>
-    <MissingDependencies />
+    <MissingDependencies>
+      <MissingDependency>
+        <Required type="2" schemaName="mzh_productname" displayName="Product Name" parentSchemaName="mzh_product" parentDisplayName="Product" solution="Active" />
+        <Dependent type="10" schemaName="mzh_Order_mzh_Product" displayName="mzh_Order_mzh_Product" parentSchemaName="mzh_order" parentDisplayName="Order" />
+      </MissingDependency>
+    </MissingDependencies>
   </SolutionManifest>
 </ImportExportXml>
