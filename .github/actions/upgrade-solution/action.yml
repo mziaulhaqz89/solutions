@@ -39,5 +39,4 @@ runs:
         app-id: ${{ inputs.client-id }}
         client-secret: ${{ inputs.client-secret }}
         tenant-id: ${{ inputs.tenant-id }}
-        solution-file: ${{ inputs.solution-release-folder }}/${{ inputs.solution-name }}_managed.zip
-        publish-changes: true
+        solution-name: ${{ inputs.solution-name }}
