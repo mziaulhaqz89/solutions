@@ -1,0 +1,104 @@
+name: Manual Solution Upgrade
+# Manual workflow to upgrade any solution to TEST and PRODUCTION environments  
+# Can be triggered manually with solution selection
+
+on:
+  workflow_dispatch:
+    inputs:
+      solution_name:
+        description: 'Which solution to upgrade?'
+        required: true
+        type: choice
+        options:
+          - travelsolution
+          - coffeeshop
+        default: 'coffeeshop'
+      target_environment:
+        description: 'Which environment to upgrade?'
+        required: true
+        type: choice
+        options:
+          - TEST
+          - PRODUCTION
+          - BOTH
+        default: 'TEST'
+
+permissions:
+  contents: write
+
+jobs:
+  manual-upgrade:
+    runs-on: windows-latest
+    environment: ${{ github.event.inputs.target_environment == 'BOTH' && 'TEST' || github.event.inputs.target_environment }}
+    env:
+      RUNNER_DEBUG: 1
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Install Power Platform CLI
+      uses: microsoft/powerplatform-actions/actions-install@v1
+
+    - name: Pack solution as unmanaged
+      uses: microsoft/powerplatform-actions/pack-solution@v1
+      with:
+        solution-folder: solutions/${{ github.event.inputs.solution_name }}
+        solution-file: out/solutions/${{ github.event.inputs.solution_name }}_unmanaged.zip
+        solution-type: Unmanaged
+
+    - name: Import to BUILD environment for managed conversion
+      uses: microsoft/powerplatform-actions/import-solution@v1
+      with:
+        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-file: out/solutions/${{ github.event.inputs.solution_name }}_unmanaged.zip
+        force-overwrite: true
+        publish-changes: true
+
+    - name: Export solution as managed
+      uses: microsoft/powerplatform-actions/export-solution@v1
+      with:
+        environment-url: ${{ vars.BUILD_ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-name: ${{ github.event.inputs.solution_name }}
+        managed: true
+        solution-output-file: out/ship/${{ github.event.inputs.solution_name }}_managed.zip
+
+    - name: Upgrade solution using upgrade-solution action
+      uses: ./.github/actions/upgrade-solution
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        client-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-name: ${{ github.event.inputs.solution_name }}
+        solution-release-folder: out/ship
+
+  upgrade-to-production:
+    if: github.event.inputs.target_environment == 'BOTH'
+    needs: [ manual-upgrade ]
+    runs-on: windows-latest
+    environment: PRODUCTION
+    env:
+      RUNNER_DEBUG: 1
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Upgrade solution to PRODUCTION
+      uses: ./.github/actions/upgrade-solution
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        client-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-name: ${{ github.event.inputs.solution_name }}
+        solution-release-folder: out/ship
