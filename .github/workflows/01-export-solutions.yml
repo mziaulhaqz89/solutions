@@ -156,23 +156,6 @@ jobs:
         managed: true
         solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}_managed.zip
 
-    - name: Create solution folder structure
-      run: |
-        # Create the target folder structure: solutionname/unmanaged and solutionname/managed
-        $solutionName = "${{ github.event.inputs.solution_name }}"
-        $targetFolder = "${{ github.event.inputs.solution_target_folder}}"
-        
-        $unmanagedFolder = "$targetFolder/$solutionName/unmanaged"
-        $managedFolder = "$targetFolder/$solutionName/managed"
-        
-        # Create directories
-        New-Item -ItemType Directory -Path $unmanagedFolder -Force
-        New-Item -ItemType Directory -Path $managedFolder -Force
-        
-        Write-Host "✅ Created folder structure:"
-        Write-Host "  - $unmanagedFolder"
-        Write-Host "  - $managedFolder"
-
     - name: unpack-solution action (unmanaged)
       uses: microsoft/powerplatform-actions/unpack-solution@v1
       with:
@@ -188,16 +171,6 @@ jobs:
         solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.solution_name }}/managed
         solution-type: 'Managed'
         overwrite-files: true
-
-    - name: Copy managed solution ZIP to managed folder
-      run: |
-        $solutionName = "${{ github.event.inputs.solution_name }}"
-        $targetFolder = "${{ github.event.inputs.solution_target_folder}}"
-        $managedFolder = "$targetFolder/$solutionName/managed"
-        
-        # Copy managed solution ZIP to managed folder (for deployment)
-        Copy-Item "${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}_managed.zip" -Destination "$managedFolder/${{ github.event.inputs.solution_name }}_managed.zip"
-        Write-Host "✅ Copied managed solution ZIP to: $managedFolder"
 
     - name: Run Solution Checker
       uses: microsoft/powerplatform-actions/check-solution@v1
