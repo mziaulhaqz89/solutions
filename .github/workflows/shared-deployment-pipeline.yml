@@ -19,7 +19,7 @@ on:
       upgrade_mode:
         description: 'Deployment mode: "update" (default) or "upgrade" (removes deleted components)'
         type: string
-        default: 'update'
+        default: 'upgrade'
       target_environment:
         description: 'Which environment to deploy to: TEST, UAT, PRODUCTION, or ALL'
         type: string
