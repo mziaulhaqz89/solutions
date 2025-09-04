@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ImportExportXml version="9.2.25084.131" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.25084.131" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.25084.00131">
+<ImportExportXml version="9.2.25084.131" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.25084.131" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.25084.00136">
   <SolutionManifest>
     <UniqueName>travelsolution</UniqueName>
     <LocalizedNames>
       <LocalizedName description="Travel Solution" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.0</Version>
+    <Version>1.0.0.20</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>mzh</UniqueName>
