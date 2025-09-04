@@ -21,8 +21,9 @@ on:
         type: choice
         options:
           - TEST
+          - UAT
           - PRODUCTION
-          - BOTH
+          - ALL
         default: 'TEST'
 
 permissions:
@@ -33,10 +34,8 @@ jobs:
     uses: ./.github/workflows/shared-deployment-pipeline.yml
     with:
       solution_name: ${{ github.event.inputs.solution_name }}
-      solution_shipping_folder: 'out/ship/'
       solution_outbound_folder: 'out/solutions/'
       solution_source_folder: 'solutions/'
-      solution_release_folder: 'out/ship'
       upgrade_mode: 'upgrade'
       target_environment: ${{ github.event.inputs.target_environment }}
     secrets:
