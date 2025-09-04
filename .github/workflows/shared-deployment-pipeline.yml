@@ -27,6 +27,14 @@ on:
        description: 'folder where the released binaries are going to be hosted *do not change*'
        type: string
        default: out/release
+      upgrade_mode:
+        description: 'Deployment mode: "update" (default) or "upgrade" (removes deleted components)'
+        type: string
+        default: 'update'
+      target_environment:
+        description: 'Which environment to deploy to: TEST, PRODUCTION, or BOTH'
+        type: string
+        default: 'BOTH'
     secrets:
       envSecret:
         description: 'The secret value for authentication using SPN'
@@ -102,6 +110,7 @@ jobs:
         path: ${{ inputs.solution_shipping_folder}}/
 
   deploy-to-test:
+    if: inputs.target_environment == 'TEST' || inputs.target_environment == 'BOTH'
     needs: [ convert-to-managed ]
     runs-on: windows-latest
     environment: 
@@ -124,9 +133,11 @@ jobs:
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ inputs.solution_name }}
         solution-release-folder: ${{ inputs.solution_release_folder }}
+        upgrade-mode: ${{ inputs.upgrade_mode }}
 
   deploy-to-production:
-    needs: [ deploy-to-test ]
+    if: inputs.target_environment == 'PRODUCTION' || inputs.target_environment == 'BOTH'
+    needs: [ convert-to-managed ]
     runs-on: windows-latest
     environment: 
       name: PRODUCTION
@@ -148,3 +159,4 @@ jobs:
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ inputs.solution_name }}
         solution-release-folder: ${{ inputs.solution_release_folder }}
+        upgrade-mode: ${{ inputs.upgrade_mode }}
