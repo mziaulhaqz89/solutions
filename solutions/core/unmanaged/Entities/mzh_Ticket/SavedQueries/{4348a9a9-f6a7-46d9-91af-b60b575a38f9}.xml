@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>0</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>1</isdefault>
+    <savedqueryid>{4348a9a9-f6a7-46d9-91af-b60b575a38f9}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="mzh_tickettitle" select="1" icon="1" preview="1">
+        <row name="result" id="mzh_ticketid">
+          <cell name="mzh_tickettitle" width="300" />
+          <cell name="mzh_description" width="150" />
+          <cell name="mzh_createddate" width="150" />
+          <cell name="mzh_priority" width="150" />
+          <cell name="mzh_status" width="150" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="mzh_ticket">
+          <attribute name="mzh_ticketid" />
+          <attribute name="mzh_tickettitle" />
+          <attribute name="createdon" />
+          <order attribute="mzh_tickettitle" descending="false" />
+          <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0" />
+          </filter>
+          <attribute name="mzh_description" />
+          <attribute name="mzh_createddate" />
+          <attribute name="mzh_priority" />
+          <attribute name="mzh_status" />
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Active Tickets" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>
