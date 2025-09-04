@@ -13,7 +13,6 @@
     <AppModuleComponent type="1" schemaName="account" />
     <AppModuleComponent type="1" schemaName="contact" />
     <AppModuleComponent type="1" schemaName="email" />
-    <AppModuleComponent type="1" schemaName="mzh_ticket" />
     <AppModuleComponent type="1" schemaName="phonecall" />
     <AppModuleComponent type="62" schemaName="mzh_CoreOperation" />
   </AppModuleComponents>
