@@ -64,9 +64,25 @@ jobs:
     - name: Get Current Solution Version and Increment
       id: version
       run: |
+        # Check current authentication status
+        Write-Host "Checking authentication status..."
+        $authOutput = & $env:POWERPLATFORMTOOLS_PACPATH auth list
+        Write-Host "Auth status: $authOutput"
+        
+        # If no authentication is found, authenticate using the same credentials as who-am-i
+        if ($LASTEXITCODE -ne 0 -or $authOutput -like "*No profiles*") {
+          Write-Host "No authentication found, creating auth profile..."
+          & $env:POWERPLATFORMTOOLS_PACPATH auth create --environment ${{ vars.ENVIRONMENT_URL }} --applicationId ${{ vars.CLIENT_ID }} --clientSecret ${{ secrets.PowerPlatformSPN }} --tenant ${{ vars.TENANT_ID }}
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Authentication failed with exit code: $LASTEXITCODE"
+            exit 1
+          }
+        }
+        
         # Get current solution list in JSON format
         Write-Host "Getting solution list..."
-        $output = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json
+        $output = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json --environment ${{ vars.ENVIRONMENT_URL }}
         
         # Check if pac command succeeded
         if ($LASTEXITCODE -ne 0) {
