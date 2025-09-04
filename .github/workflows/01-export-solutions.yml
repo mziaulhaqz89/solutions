@@ -61,12 +61,43 @@ jobs:
         client-secret: ${{ secrets.PowerPlatformSPN }}
         tenant-id: ${{ vars.TENANT_ID }}
 
-    - name: Generate Version Number
+    - name: Get Current Solution Version and Increment
       id: version
       run: |
-        $version = "1.0.0.${{ github.run_number }}"
-        echo "number=$version" >> $env:GITHUB_OUTPUT
-        Write-Host "Generated version: $version"
+        try {
+          # Get current solution list in JSON format
+          $output = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Warning: Could not retrieve solution list. Using default version."
+            $newVersion = "1.0.0.1"
+          } else {
+            # Parse JSON and find the specific solution
+            $solutions = $output | ConvertFrom-Json
+            $currentSolution = $solutions | Where-Object { $_.SolutionUniqueName -eq "${{ github.event.inputs.solution_name }}" }
+            
+            $currentVersion = $currentSolution.VersionNumber
+            Write-Host "Current version found: $currentVersion"
+            
+            # Parse version numbers (format: major.minor.build.revision)
+            $versionParts = $currentVersion.Split('.')
+            if ($versionParts.Length -eq 4) {
+              $major = [int]$versionParts[0]
+              $minor = [int]$versionParts[1] 
+              $build = [int]$versionParts[2]
+              $revision = [int]$versionParts[3]
+              
+              # Increment revision number
+              $revision++
+              $newVersion = "$major.$minor.$build.$revision"
+          }
+        } catch {
+          Write-Host "Error getting current version: $($_.Exception.Message)"
+          Write-Host "Using default version."
+          $newVersion = "1.0.0.1"
+        }
+        
+        echo "number=$newVersion" >> $env:GITHUB_OUTPUT
+        Write-Host "New version will be: $newVersion"
 
     - name: Set Online Solution Version
       uses: microsoft/powerplatform-actions/set-online-solution-version@v1
