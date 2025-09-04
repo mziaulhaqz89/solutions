@@ -101,6 +101,17 @@ jobs:
         $timestamp = Get-Date -Format "yyyyMMdd-HHmm"
         echo "value=$timestamp" >> $env:GITHUB_OUTPUT
 
+    - name: Generate branch name for PR
+      id: branch-name
+      run: |
+        if ("${{ github.event.inputs.custom_branch_name }}" -ne "") {
+          $branchName = "${{ github.event.inputs.custom_branch_name }}"
+        } else {
+          $branchName = "${{ github.event.inputs.solution_name }}-by-${{ github.actor }}-${{ steps.timestamp.outputs.value }}"
+        }
+        echo "value=$branchName" >> $env:GITHUB_OUTPUT
+        Write-Host "Branch name: $branchName"
+
     - name: branch-solution, prepare it for a PullRequest
       uses: microsoft/powerplatform-actions/branch-solution@v1
       with:
@@ -108,13 +119,13 @@ jobs:
         solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.solution_name }}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         allow-empty-commit: true
-        branch-name: ${{ github.event.inputs.custom_branch_name || format('{0}-by-{1}-{2}', github.event.inputs.solution_name, github.actor, steps.timestamp.outputs.value) }}
+        branch-name: ${{ steps.branch-name.outputs.value }}
 
     - name: Create Pull Request automatically
       uses: actions/github-script@v7
       with:
         script: |
-          const branchName = '${{ github.event.inputs.custom_branch_name || format(\'{0}-by-{1}-{2}\', github.event.inputs.solution_name, github.actor, steps.timestamp.outputs.value) }}';
+          const branchName = '${{ steps.branch-name.outputs.value }}';
           const solutionName = '${{ github.event.inputs.solution_name }}';
           const version = '${{ steps.version.outputs.number }}';
           const actor = '${{ github.actor }}';
