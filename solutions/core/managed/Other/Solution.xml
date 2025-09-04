@@ -6,7 +6,7 @@
       <LocalizedName description="Core" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.5</Version>
+    <Version>1.0.0.6</Version>
     <Managed>1</Managed>
     <Publisher>
       <UniqueName>mzh</UniqueName>
@@ -87,6 +87,8 @@
       <RootComponent type="1" schemaName="end_project" behavior="0" />
       <RootComponent type="1" schemaName="mzh_ticket" behavior="0" />
       <RootComponent type="1" schemaName="mzh_ticketstatus" behavior="0" />
+      <RootComponent type="62" schemaName="mzh_CoreOperation" behavior="0" />
+      <RootComponent type="80" schemaName="mzh_CoreOperation" behavior="0" />
     </RootComponents>
     <MissingDependencies>
       <MissingDependency>
@@ -104,6 +106,16 @@
       <MissingDependency>
         <Required type="1" schemaName="adx_webformsession" displayName="Multistep Form Session" solution="PowerPages_RuntimeCore (1.0.2402.1)" />
         <Dependent type="1" schemaName="contact" displayName="Contact" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="61" schemaName="msdyn_/Images/AppModule_Default_Icon.png" displayName="msdyn_/Images/AppModule_Default_Icon.png" solution="AppModuleWebResources (2.5)" />
+        <Dependent type="80" schemaName="mzh_CoreOperation" displayName="Core Operation" />
+      </MissingDependency>
+      <MissingDependency>
+        <Required type="SettingDefinition" displayName="AppChannel" solution="msdyn_AppFrameworkInfraExtensions (1.0.0.15)" id.uniquename="AppChannel">
+          <package appName="PowerAppsAppFramework Package" version="1.0.0.23">PowerAppsAppFramework_Anchor (1.0.0.23)</package>
+        </Required>
+        <Dependent type="AppSetting" displayName="parentappmoduleid.uniquename=mzh_CoreOperation,settingdefinitionid.uniquename=AppChannel" id.parentappmoduleid.uniquename="mzh_CoreOperation" id.settingdefinitionid.uniquename="AppChannel" />
       </MissingDependency>
     </MissingDependencies>
   </SolutionManifest>
