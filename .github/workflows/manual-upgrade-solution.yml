@@ -12,8 +12,8 @@ on:
         required: true
         type: choice
         options:
-          - travelsolution
-          - coffeeshop
+          - core
+          - flows
         default: 'coffeeshop'
       target_environment:
         description: 'Which environment to upgrade?'
