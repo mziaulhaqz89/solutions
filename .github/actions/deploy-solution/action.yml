@@ -35,6 +35,12 @@ runs:
     - name: Install Power Platform CLI
       uses: microsoft/powerplatform-actions/actions-install@v1
 
+    - name: Download packed solution artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.solution-name }}-managed-solution
+        path: ${{ inputs.solution-outbound-folder }}
+
     - name: Import MANAGED solution (Update Mode)
       if: inputs.upgrade-mode == 'update'
       uses: microsoft/powerplatform-actions/import-solution@v1
