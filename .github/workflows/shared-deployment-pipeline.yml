@@ -14,7 +14,7 @@ on:
       solution_shipping_folder:
         description: 'folder name for staging the exported solution *do not change*'        
         type: string
-        default: out/ship/
+        default: out/exported/
       solution_outbound_folder:
         description: 'staging the unpacked solution folder before check-in *do not change*'
         type: string
@@ -41,9 +41,8 @@ on:
         required: true
 
 jobs:
-  convert-to-managed:
+  prepare-managed-solution:
     runs-on: windows-latest
-    environment: BUILD
     env:
       RUNNER_DEBUG: 1
 
@@ -55,63 +54,44 @@ jobs:
     - name: Install Power Platform CLI
       uses: microsoft/powerplatform-actions/actions-install@v1
 
-    - name: Pack solution as unmanaged
+    - name: Pack solution from source control
       uses: microsoft/powerplatform-actions/pack-solution@v1
       with:
         solution-folder: ${{ inputs.solution_source_folder}}/${{ inputs.solution_name }}
         solution-file: ${{ inputs.solution_outbound_folder}}/${{ inputs.solution_name }}_unmanaged.zip
         solution-type: Unmanaged
 
-    # Use a dedicated build environment (separate from TEST)
-    - name: Import solution as unmanaged to build env (for conversion only)
-      uses: microsoft/powerplatform-actions/import-solution@v1
-      with:
-        environment-url: ${{ vars.ENVIRONMENT_URL }}
-        app-id: ${{ vars.CLIENT_ID }}
-        client-secret: ${{ secrets.envSecret }}
-        tenant-id: ${{ vars.TENANT_ID }}
-        solution-file: ${{ inputs.solution_outbound_folder}}/${{ inputs.solution_name }}_unmanaged.zip
-        force-overwrite: true
-        publish-changes: true
+    - name: Check if managed solution exists in exported folder
+      id: check_managed
+      run: |
+        $managedPath = "${{ inputs.solution_shipping_folder}}/${{ inputs.solution_name }}_managed.zip"
+        if (Test-Path $managedPath) {
+          echo "managed_exists=true" >> $env:GITHUB_OUTPUT
+          Write-Host "Managed solution found at: $managedPath"
+        } else {
+          echo "managed_exists=false" >> $env:GITHUB_OUTPUT
+          Write-Host "Managed solution not found, will need to create it"
+        }
 
-    - name: Export solution as managed
-      uses: microsoft/powerplatform-actions/export-solution@v1
-      with:
-        environment-url: ${{ vars.ENVIRONMENT_URL }}
-        app-id: ${{ vars.CLIENT_ID }}
-        client-secret: ${{ secrets.envSecret }} 
-        tenant-id: ${{ vars.TENANT_ID }}
-        solution-name: ${{ inputs.solution_name }}
-        managed: true
-        solution-output-file: ${{ inputs.solution_shipping_folder}}/${{ inputs.solution_name }}_managed.zip
-
-    - name: Run Solution Checker on Managed Solution
+    # Only run solution checker on the managed solution from source control if it exists
+    - name: Run Solution Checker on Managed Solution (from source control)
+      if: steps.check_managed.outputs.managed_exists == 'true'
       uses: microsoft/powerplatform-actions/check-solution@v1
       with:
-        environment-url: ${{ vars.ENVIRONMENT_URL }}
-        app-id: ${{ vars.CLIENT_ID }}
-        client-secret: ${{ secrets.envSecret }}
-        tenant-id: ${{ vars.TENANT_ID }}
         path: ${{ inputs.solution_shipping_folder}}/${{ inputs.solution_name }}_managed.zip
 
     - name: Upload Solution Checker Results
       uses: actions/upload-artifact@v4
-      if: always()
+      if: always() && steps.check_managed.outputs.managed_exists == 'true'
       with:
         name: managed-solution-checker-results-${{ inputs.solution_name }}
         path: |
           ${{ runner.temp }}/PowerAppsChecker/**/*
         retention-days: 30
 
-    - name: Upload the ready to ship solution to GH artifact store
-      uses: actions/upload-artifact@v4
-      with:
-        name: managedSolutions
-        path: ${{ inputs.solution_shipping_folder}}/
-
   deploy-to-test:
     if: inputs.target_environment == 'TEST' || inputs.target_environment == 'ALL'
-    needs: [ convert-to-managed ]
+    needs: [ prepare-managed-solution ]
     runs-on: windows-latest
     environment: 
       name: TEST
@@ -137,7 +117,7 @@ jobs:
 
   deploy-to-uat:
     if: inputs.target_environment == 'UAT' || inputs.target_environment == 'ALL'
-    needs: [ convert-to-managed, deploy-to-test ]
+    needs: [ prepare-managed-solution, deploy-to-test ]
     runs-on: windows-latest
     environment: 
       name: UAT
@@ -163,7 +143,7 @@ jobs:
 
   deploy-to-production:
     if: inputs.target_environment == 'PRODUCTION' || inputs.target_environment == 'ALL'
-    needs: [ convert-to-managed, deploy-to-uat ]
+    needs: [ prepare-managed-solution, deploy-to-uat ]
     runs-on: windows-latest
     environment: 
       name: PRODUCTION

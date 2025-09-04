@@ -30,11 +30,18 @@ runs:
     - name: Install Power Platform CLI
       uses: microsoft/powerplatform-actions/actions-install@v1
 
-    - name: Fetch the ready to ship solution from GH artifact store
-      uses: actions/download-artifact@v4
-      with:
-        name: managedSolutions
-        path: ${{ inputs.solution-release-folder }}
+    - name: Verify managed solution exists
+      shell: pwsh
+      run: |
+        $managedPath = "${{ inputs.solution-release-folder }}/${{ inputs.solution-name }}_managed.zip"
+        if (Test-Path $managedPath) {
+          Write-Host "✅ Found managed solution: $managedPath"
+        } else {
+          Write-Host "❌ Managed solution not found: $managedPath"
+          Write-Host "Available files in ${{ inputs.solution-release-folder }}:"
+          Get-ChildItem "${{ inputs.solution-release-folder }}" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  - $($_.Name)" }
+          exit 1
+        }
 
     - name: Import MANAGED solution (Update Mode)
       if: inputs.upgrade-mode == 'update'
