@@ -92,7 +92,7 @@ jobs:
         lfs: true
 
     - name: Upgrade solution in TEST environment
-      uses: ./.github/actions/upgrade-solution
+      uses: ./.github/actions/deploy-solution
       with:
         environment-url: ${{ vars.ENVIRONMENT_URL }}
         client-id: ${{ vars.CLIENT_ID }}
@@ -100,6 +100,7 @@ jobs:
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ github.event.inputs.solution_name }}
         solution-release-folder: out/ship
+        upgrade-mode: 'upgrade'
 
   upgrade-to-production:
     if: github.event.inputs.target_environment == 'PRODUCTION' || github.event.inputs.target_environment == 'BOTH'
@@ -115,7 +116,7 @@ jobs:
         lfs: true
 
     - name: Upgrade solution in PRODUCTION environment
-      uses: ./.github/actions/upgrade-solution
+      uses: ./.github/actions/deploy-solution
       with:
         environment-url: ${{ vars.ENVIRONMENT_URL }}
         client-id: ${{ vars.CLIENT_ID }}
@@ -123,3 +124,4 @@ jobs:
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ github.event.inputs.solution_name }}
         solution-release-folder: out/ship
+        upgrade-mode: 'upgrade'
