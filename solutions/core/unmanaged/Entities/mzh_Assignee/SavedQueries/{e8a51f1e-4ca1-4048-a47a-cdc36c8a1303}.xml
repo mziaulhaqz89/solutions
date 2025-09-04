@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>0</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>0</isdefault>
+    <savedqueryid>{e8a51f1e-4ca1-4048-a47a-cdc36c8a1303}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="mzh_assigneename" select="1" icon="1" preview="1">
+        <row name="result" id="mzh_assigneeid">
+          <cell name="mzh_assigneename" width="300" />
+          <cell name="createdon" width="125" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="mzh_assignee">
+          <attribute name="mzh_assigneeid" />
+          <attribute name="mzh_assigneename" />
+          <attribute name="createdon" />
+          <order attribute="mzh_assigneename" descending="false" />
+          <filter type="and">
+            <condition attribute="statecode" operator="eq" value="1" />
+          </filter>
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Inactive Assignees" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>

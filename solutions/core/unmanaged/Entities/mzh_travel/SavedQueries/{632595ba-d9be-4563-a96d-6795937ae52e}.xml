@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>0</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>1</isdefault>
+    <savedqueryid>{632595ba-d9be-4563-a96d-6795937ae52e}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="mzh_travelname" select="1" icon="1" preview="1">
+        <row name="result" id="mzh_travelid">
+          <cell name="mzh_travelname" width="300" />
+          <cell name="mzh_startdate" width="150" />
+          <cell name="mzh_enddate" width="150" />
+          <cell name="mzh_budget" width="150" />
+          <cell name="mzh_destinationid" width="150" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="mzh_travel">
+          <attribute name="mzh_travelid" />
+          <attribute name="mzh_travelname" />
+          <attribute name="createdon" />
+          <order attribute="mzh_travelname" descending="false" />
+          <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0" />
+          </filter>
+          <attribute name="mzh_startdate" />
+          <attribute name="mzh_enddate" />
+          <attribute name="mzh_budget" />
+          <attribute name="mzh_destinationid" />
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Active Travels" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>

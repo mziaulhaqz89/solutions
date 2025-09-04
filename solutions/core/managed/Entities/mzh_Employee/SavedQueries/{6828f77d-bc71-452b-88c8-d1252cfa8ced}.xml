@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>0</CanBeDeleted>
+    <isquickfindquery>1</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>1</isdefault>
+    <savedqueryid>{6828f77d-bc71-452b-88c8-d1252cfa8ced}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="mzh_employeename" select="1" icon="1" preview="1">
+        <row name="result" id="mzh_employeeid">
+          <cell name="mzh_employeename" width="300" />
+          <cell name="createdon" width="125" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>4</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="mzh_employee">
+          <attribute name="mzh_employeeid" />
+          <attribute name="mzh_employeename" />
+          <attribute name="createdon" />
+          <order attribute="mzh_employeename" descending="false" />
+          <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0" />
+          </filter>
+          <filter type="or" isquickfindfields="1">
+            <condition attribute="mzh_employeename" operator="like" value="{0}" />
+          </filter>
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Quick Find Active Employees" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>
