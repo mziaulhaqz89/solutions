@@ -32,9 +32,9 @@ on:
         type: string
         default: 'update'
       target_environment:
-        description: 'Which environment to deploy to: TEST, PRODUCTION, or BOTH'
+        description: 'Which environment to deploy to: TEST, UAT, PRODUCTION, or ALL'
         type: string
-        default: 'BOTH'
+        default: 'ALL'
     secrets:
       envSecret:
         description: 'The secret value for authentication using SPN'
@@ -110,7 +110,7 @@ jobs:
         path: ${{ inputs.solution_shipping_folder}}/
 
   deploy-to-test:
-    if: inputs.target_environment == 'TEST' || inputs.target_environment == 'BOTH'
+    if: inputs.target_environment == 'TEST' || inputs.target_environment == 'ALL'
     needs: [ convert-to-managed ]
     runs-on: windows-latest
     environment: 
@@ -135,9 +135,35 @@ jobs:
         solution-release-folder: ${{ inputs.solution_release_folder }}
         upgrade-mode: ${{ inputs.upgrade_mode }}
 
+  deploy-to-uat:
+    if: inputs.target_environment == 'UAT' || inputs.target_environment == 'ALL'
+    needs: [ convert-to-managed, deploy-to-test ]
+    runs-on: windows-latest
+    environment: 
+      name: UAT
+      url: ${{ vars.ENVIRONMENT_URL }}
+    env:
+      RUNNER_DEBUG: 1
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Deploy solution to UAT environment
+      uses: ./.github/actions/deploy-solution
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        client-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.envSecret }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-name: ${{ inputs.solution_name }}
+        solution-release-folder: ${{ inputs.solution_release_folder }}
+        upgrade-mode: ${{ inputs.upgrade_mode }}
+
   deploy-to-production:
-    if: inputs.target_environment == 'PRODUCTION' || inputs.target_environment == 'BOTH'
-    needs: [ convert-to-managed ]
+    if: inputs.target_environment == 'PRODUCTION' || inputs.target_environment == 'ALL'
+    needs: [ convert-to-managed, deploy-to-uat ]
     runs-on: windows-latest
     environment: 
       name: PRODUCTION
