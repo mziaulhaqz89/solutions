@@ -185,6 +185,14 @@ jobs:
         Copy-Item "${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}_managed.zip" -Destination "$managedFolder/${{ github.event.inputs.solution_name }}_managed.zip"
         Write-Host "✅ Copied managed solution to: $managedFolder"
 
+    - name: unpack-managed-solution action
+      uses: microsoft/powerplatform-actions/unpack-solution@v1
+      with:
+        solution-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}_managed.zip
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.solution_name }}/managed/unpacked
+        solution-type: 'Managed'
+        overwrite-files: true
+
     - name: Run Solution Checker
       uses: microsoft/powerplatform-actions/check-solution@v1
       with:
