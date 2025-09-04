@@ -1,20 +1,13 @@
 name: release-solution-to-prod-reusable
-# Reusable workflow
-# convert solution to managed (using a build PowerPlatform environment for the conversion)
-# upload the solution to the GitHub artifacts and deploy to the PROD environment
+# Reusable workflow for deploying managed solutions from source control
+# Deploy managed solutions directly from source control to TEST, UAT, and PRODUCTION environments
 on:
   workflow_call:
     inputs: 
-      #Do Not change these values
-      #Values are set by the caller
-      #caller sample: release-action-call.ymnl
       solution_name:
         description: 'The solution name.'
         type: string
-      solution_shipping_folder:
-        description: 'folder name for staging the exported solution *do not change*'        
-        type: string
-        default: out/exported/
+        required: true
       solution_outbound_folder:
         description: 'staging the unpacked solution folder before check-in *do not change*'
         type: string
@@ -23,10 +16,6 @@ on:
        description: 'folder name to be created and checked in *do not change*'
        type: string
        default: solutions/
-      solution_release_folder:
-       description: 'folder where the released binaries are going to be hosted *do not change*'
-       type: string
-       default: out/release
       upgrade_mode:
         description: 'Deployment mode: "update" (default) or "upgrade" (removes deleted components)'
         type: string
@@ -54,42 +43,28 @@ jobs:
     - name: Install Power Platform CLI
       uses: microsoft/powerplatform-actions/actions-install@v1
 
-    - name: Pack solution from source control
+    - name: Verify managed solution exists in source control
+      run: |
+        $managedPath = "${{ inputs.solution_source_folder }}/${{ inputs.solution_name }}/managed"
+        if (-not (Test-Path $managedPath)) {
+          Write-Error "❌ DEPLOYMENT FAILED: Managed solution folder not found at: $managedPath"
+          Write-Host "Available folders:"
+          Get-ChildItem "${{ inputs.solution_source_folder }}/${{ inputs.solution_name }}/" -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  - $($_.Name)" }
+          Write-Host ""
+          Write-Host "💡 To fix this issue:"
+          Write-Host "   1. Run the export workflow to export managed solution from DEV environment"
+          Write-Host "   2. Ensure the export includes managed solution output"
+          Write-Host "   3. Verify the managed solution is committed to source control"
+          exit 1
+        }
+        Write-Host "✅ Managed solution folder found at: $managedPath"
+
+    - name: Pack managed solution from source control
       uses: microsoft/powerplatform-actions/pack-solution@v1
       with:
-        solution-folder: ${{ inputs.solution_source_folder}}/${{ inputs.solution_name }}
-        solution-file: ${{ inputs.solution_outbound_folder}}/${{ inputs.solution_name }}_unmanaged.zip
-        solution-type: Unmanaged
-
-    - name: Check if managed solution exists in exported folder
-      id: check_managed
-      run: |
-        $managedPath = "${{ inputs.solution_source_folder }}/${{ inputs.solution_name }}/managed/${{ inputs.solution_name }}_managed.zip"
-        if (Test-Path $managedPath) {
-          echo "managed_exists=true" >> $env:GITHUB_OUTPUT
-          Write-Host "Managed solution found at: $managedPath"
-        } else {
-          echo "managed_exists=false" >> $env:GITHUB_OUTPUT
-          Write-Host "Managed solution not found at: $managedPath"
-          Write-Host "Available files in managed folder:"
-          Get-ChildItem "${{ inputs.solution_source_folder }}/${{ inputs.solution_name }}/managed/" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  - $($_.Name)" }
-        }
-
-    # Only run solution checker on the managed solution from source control if it exists
-    - name: Run Solution Checker on Managed Solution (from source control)
-      if: steps.check_managed.outputs.managed_exists == 'true'
-      uses: microsoft/powerplatform-actions/check-solution@v1
-      with:
-        path: ${{ inputs.solution_source_folder }}/${{ inputs.solution_name }}/managed/${{ inputs.solution_name }}_managed.zip
-
-    - name: Upload Solution Checker Results
-      uses: actions/upload-artifact@v4
-      if: always() && steps.check_managed.outputs.managed_exists == 'true'
-      with:
-        name: managed-solution-checker-results-${{ inputs.solution_name }}
-        path: |
-          ${{ runner.temp }}/PowerAppsChecker/**/*
-        retention-days: 30
+        solution-folder: ${{ inputs.solution_source_folder}}/${{ inputs.solution_name }}/managed
+        solution-file: ${{ inputs.solution_outbound_folder}}/${{ inputs.solution_name }}_managed.zip
+        solution-type: Managed
 
   deploy-to-test:
     if: inputs.target_environment == 'TEST' || inputs.target_environment == 'ALL'
@@ -115,6 +90,7 @@ jobs:
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ inputs.solution_name }}
         solution-source-folder: ${{ inputs.solution_source_folder }}
+        solution-outbound-folder: ${{ inputs.solution_outbound_folder }}
         upgrade-mode: ${{ inputs.upgrade_mode }}
 
   deploy-to-uat:
@@ -141,6 +117,7 @@ jobs:
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ inputs.solution_name }}
         solution-source-folder: ${{ inputs.solution_source_folder }}
+        solution-outbound-folder: ${{ inputs.solution_outbound_folder }}
         upgrade-mode: ${{ inputs.upgrade_mode }}
 
   deploy-to-production:
@@ -167,4 +144,5 @@ jobs:
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ inputs.solution_name }}
         solution-source-folder: ${{ inputs.solution_source_folder }}
+        solution-outbound-folder: ${{ inputs.solution_outbound_folder }}
         upgrade-mode: ${{ inputs.upgrade_mode }}

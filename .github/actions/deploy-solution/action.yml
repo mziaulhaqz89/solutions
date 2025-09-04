@@ -20,6 +20,10 @@ inputs:
     description: 'Source folder containing the solution structure (solutions/)'
     required: true
     default: 'solutions/'
+  solution-outbound-folder:
+    description: 'Folder containing the packed solution file (out/solutions/)'
+    required: true
+    default: 'out/solutions/'
   upgrade-mode:
     description: 'Deployment mode: "update" (default, keeps deleted components) or "upgrade" (removes deleted components)'
     required: false
@@ -31,19 +35,6 @@ runs:
     - name: Install Power Platform CLI
       uses: microsoft/powerplatform-actions/actions-install@v1
 
-    - name: Verify managed solution exists
-      shell: pwsh
-      run: |
-        $managedPath = "${{ inputs.solution-source-folder }}/${{ inputs.solution-name }}/managed/${{ inputs.solution-name }}_managed.zip"
-        if (Test-Path $managedPath) {
-          Write-Host "✅ Found managed solution: $managedPath"
-        } else {
-          Write-Host "❌ Managed solution not found: $managedPath"
-          Write-Host "Available files in ${{ inputs.solution-source-folder }}/${{ inputs.solution-name }}/managed/:"
-          Get-ChildItem "${{ inputs.solution-source-folder }}/${{ inputs.solution-name }}/managed/" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  - $($_.Name)" }
-          exit 1
-        }
-
     - name: Import MANAGED solution (Update Mode)
       if: inputs.upgrade-mode == 'update'
       uses: microsoft/powerplatform-actions/import-solution@v1
@@ -52,7 +43,7 @@ runs:
         app-id: ${{ inputs.client-id }}
         client-secret: ${{ inputs.client-secret }}
         tenant-id: ${{ inputs.tenant-id }}
-        solution-file: ${{ inputs.solution-source-folder }}/${{ inputs.solution-name }}/managed/${{ inputs.solution-name }}_managed.zip
+        solution-file: ${{ inputs.solution-outbound-folder }}${{ inputs.solution-name }}_managed.zip
         force-overwrite: true
         publish-changes: true
 
@@ -64,6 +55,6 @@ runs:
         app-id: ${{ inputs.client-id }}
         client-secret: ${{ inputs.client-secret }}
         tenant-id: ${{ inputs.tenant-id }}
-        solution-file: ${{ inputs.solution-source-folder }}/${{ inputs.solution-name }}/managed/${{ inputs.solution-name }}_managed.zip
+        solution-file: ${{ inputs.solution-outbound-folder }}${{ inputs.solution-name }}_managed.zip
         stage-and-upgrade: true
         publish-changes: true
