@@ -41,8 +41,68 @@ runs:
         name: ${{ inputs.solution-name }}-managed-solution
         path: ${{ inputs.solution-outbound-folder }}
 
-    - name: Import MANAGED solution (Update Mode)
-      if: inputs.upgrade-mode == 'update'
+    - name: Check if solution exists in target environment
+      id: solution-check
+      shell: pwsh
+      run: |
+        Write-Host "=== SOLUTION EXISTENCE CHECK ==="
+        Write-Host "Checking if solution '${{ inputs.solution-name }}' exists in target environment..."
+        Write-Host "Environment: ${{ inputs.environment-url }}"
+        Write-Host ""
+        
+        # Authenticate to target environment
+        Write-Host "Authenticating to target environment..."
+        & $env:POWERPLATFORMTOOLS_PACPATH auth create --environment "${{ inputs.environment-url }}" --applicationId "${{ inputs.client-id }}" --clientSecret "${{ inputs.client-secret }}" --tenant "${{ inputs.tenant-id }}"
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "❌ Authentication failed"
+          exit 1
+        }
+        
+        # Get list of installed solutions
+        Write-Host "Retrieving solution list from target environment..."
+        $solutionListOutput = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json --environment "${{ inputs.environment-url }}"
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "❌ Failed to retrieve solution list from target environment"
+          Write-Host "Output: $solutionListOutput"
+          exit 1
+        }
+        
+        $installedSolutions = $solutionListOutput | ConvertFrom-Json
+        $existingSolution = $installedSolutions | Where-Object { $_.SolutionUniqueName -eq "${{ inputs.solution-name }}" }
+        
+        if ($existingSolution) {
+          $currentVersion = $existingSolution.VersionNumber
+          $isManaged = $existingSolution.IsManaged
+          Write-Host "✅ SOLUTION EXISTS:"
+          Write-Host "   Name: ${{ inputs.solution-name }}"
+          Write-Host "   Current Version: $currentVersion"
+          Write-Host "   Is Managed: $isManaged"
+          Write-Host "   Import Mode: Will use ${{ inputs.upgrade-mode }} mode as requested"
+          
+          echo "exists=true" >> $env:GITHUB_OUTPUT
+          echo "current-version=$currentVersion" >> $env:GITHUB_OUTPUT
+          echo "is-managed=$isManaged" >> $env:GITHUB_OUTPUT
+          
+          if (${{ inputs.upgrade-mode }} -eq "upgrade") {
+            Write-Host "   Strategy: stage-and-upgrade (solution exists)"
+          } else {
+            Write-Host "   Strategy: update/overwrite (solution exists)"
+          }
+        } else {
+          Write-Host "ℹ️  SOLUTION DOES NOT EXIST:"
+          Write-Host "   Name: ${{ inputs.solution-name }}"
+          Write-Host "   Import Mode: Will use initial import (force-overwrite)"
+          Write-Host "   Note: stage-and-upgrade requires existing solution, will use standard import"
+          
+          echo "exists=false" >> $env:GITHUB_OUTPUT
+          echo "current-version=" >> $env:GITHUB_OUTPUT
+          echo "is-managed=" >> $env:GITHUB_OUTPUT
+        }
+
+    - name: Import MANAGED solution (First Time / Update Mode)
+      if: steps.solution-check.outputs.exists == 'false' || inputs.upgrade-mode == 'update'
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
         environment-url: ${{ inputs.environment-url }}
@@ -53,8 +113,8 @@ runs:
         force-overwrite: true
         publish-changes: true
 
-    - name: Import solution with upgrade (Upgrade Mode)
-      if: inputs.upgrade-mode == 'upgrade'
+    - name: Import solution with upgrade (Upgrade Mode - Existing Solution Only)
+      if: steps.solution-check.outputs.exists == 'true' && inputs.upgrade-mode == 'upgrade'
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
         environment-url: ${{ inputs.environment-url }}
@@ -64,3 +124,17 @@ runs:
         solution-file: ${{ inputs.solution-outbound-folder }}${{ inputs.solution-name }}_managed.zip
         stage-and-upgrade: true
         publish-changes: true
+
+    - name: Deployment Summary
+      shell: pwsh
+      run: |
+        Write-Host "=== DEPLOYMENT SUMMARY ==="
+        if ("${{ steps.solution-check.outputs.exists }}" -eq "true") {
+          Write-Host "✅ Solution '${{ inputs.solution-name }}' successfully updated/upgraded"
+          Write-Host "   Previous Version: ${{ steps.solution-check.outputs.current-version }}"
+          Write-Host "   Deployment Mode: ${{ inputs.upgrade-mode }}"
+        } else {
+          Write-Host "✅ Solution '${{ inputs.solution-name }}' successfully installed (first time)"
+          Write-Host "   Deployment Mode: Initial import with force-overwrite"
+        }
+        Write-Host "   Target Environment: ${{ inputs.environment-url }}"
