@@ -65,11 +65,31 @@ jobs:
       id: version
       run: |
         # Get current solution list in JSON format
+        Write-Host "Getting solution list..."
         $output = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json
+        
+        # Check if pac command succeeded
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "PAC command failed with exit code: $LASTEXITCODE"
+          Write-Host "Output: $output"
+          exit 1
+        }
+        
+        # Debug: Show raw output
+        Write-Host "Raw PAC output:"
+        Write-Host $output
         
         # Parse JSON and find the specific solution
         $solutions = $output | ConvertFrom-Json
         $currentSolution = $solutions | Where-Object { $_.SolutionUniqueName -eq "${{ github.event.inputs.solution_name }}" }
+        
+        # Check if solution was found
+        if (-not $currentSolution) {
+          Write-Host "Solution '${{ github.event.inputs.solution_name }}' not found in environment"
+          Write-Host "Available solutions:"
+          $solutions | ForEach-Object { Write-Host "  - $($_.SolutionUniqueName)" }
+          exit 1
+        }
         
         # Get current version
         $currentVersion = $currentSolution.VersionNumber
