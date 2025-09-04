@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<EntityRelationships xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <EntityRelationship Name="business_unit_mzh_country" />
+  <EntityRelationship Name="business_unit_mzh_destination" />
+  <EntityRelationship Name="business_unit_mzh_travel" />
+  <EntityRelationship Name="lk_mzh_country_createdby" />
+  <EntityRelationship Name="lk_mzh_country_modifiedby" />
+  <EntityRelationship Name="lk_mzh_destination_createdby" />
+  <EntityRelationship Name="lk_mzh_destination_modifiedby" />
+  <EntityRelationship Name="lk_mzh_travel_createdby" />
+  <EntityRelationship Name="lk_mzh_travel_modifiedby" />
+  <EntityRelationship Name="mzh_destination_destinationcountry_mzh_country" />
+  <EntityRelationship Name="mzh_travel_mzh_destinationid_mzh_destination" />
+  <EntityRelationship Name="owner_mzh_country" />
+  <EntityRelationship Name="owner_mzh_destination" />
+  <EntityRelationship Name="owner_mzh_travel" />
+  <EntityRelationship Name="team_mzh_country" />
+  <EntityRelationship Name="team_mzh_destination" />
+  <EntityRelationship Name="team_mzh_travel" />
+  <EntityRelationship Name="TransactionCurrency_mzh_travel" />
+  <EntityRelationship Name="user_mzh_country" />
+  <EntityRelationship Name="user_mzh_destination" />
+  <EntityRelationship Name="user_mzh_travel" />
+</EntityRelationships>
