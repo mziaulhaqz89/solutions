@@ -64,13 +64,15 @@ jobs:
     - name: Check if managed solution exists in exported folder
       id: check_managed
       run: |
-        $managedPath = "${{ inputs.solution_shipping_folder}}/${{ inputs.solution_name }}_managed.zip"
+        $managedPath = "${{ inputs.solution_source_folder }}/${{ inputs.solution_name }}/managed/${{ inputs.solution_name }}_managed.zip"
         if (Test-Path $managedPath) {
           echo "managed_exists=true" >> $env:GITHUB_OUTPUT
           Write-Host "Managed solution found at: $managedPath"
         } else {
           echo "managed_exists=false" >> $env:GITHUB_OUTPUT
-          Write-Host "Managed solution not found, will need to create it"
+          Write-Host "Managed solution not found at: $managedPath"
+          Write-Host "Available files in managed folder:"
+          Get-ChildItem "${{ inputs.solution_source_folder }}/${{ inputs.solution_name }}/managed/" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "  - $($_.Name)" }
         }
 
     # Only run solution checker on the managed solution from source control if it exists
@@ -78,7 +80,7 @@ jobs:
       if: steps.check_managed.outputs.managed_exists == 'true'
       uses: microsoft/powerplatform-actions/check-solution@v1
       with:
-        path: ${{ inputs.solution_shipping_folder}}/${{ inputs.solution_name }}_managed.zip
+        path: ${{ inputs.solution_source_folder }}/${{ inputs.solution_name }}/managed/${{ inputs.solution_name }}_managed.zip
 
     - name: Upload Solution Checker Results
       uses: actions/upload-artifact@v4
@@ -112,7 +114,7 @@ jobs:
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ inputs.solution_name }}
-        solution-release-folder: ${{ inputs.solution_release_folder }}
+        solution-source-folder: ${{ inputs.solution_source_folder }}
         upgrade-mode: ${{ inputs.upgrade_mode }}
 
   deploy-to-uat:
@@ -138,7 +140,7 @@ jobs:
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ inputs.solution_name }}
-        solution-release-folder: ${{ inputs.solution_release_folder }}
+        solution-source-folder: ${{ inputs.solution_source_folder }}
         upgrade-mode: ${{ inputs.upgrade_mode }}
 
   deploy-to-production:
@@ -164,5 +166,5 @@ jobs:
         client-secret: ${{ secrets.envSecret }}
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: ${{ inputs.solution_name }}
-        solution-release-folder: ${{ inputs.solution_release_folder }}
+        solution-source-folder: ${{ inputs.solution_source_folder }}
         upgrade-mode: ${{ inputs.upgrade_mode }}

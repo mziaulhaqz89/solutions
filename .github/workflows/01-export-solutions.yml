@@ -164,6 +164,45 @@ jobs:
         solution-type: 'Unmanaged'
         overwrite-files: true
 
+    - name: Create solution folder structure
+      run: |
+        # Create the target folder structure: solutionname/unmanaged and solutionname/managed
+        $solutionName = "${{ github.event.inputs.solution_name }}"
+        $targetFolder = "${{ github.event.inputs.solution_target_folder}}"
+        
+        $unmanagedFolder = "$targetFolder/$solutionName/unmanaged"
+        $managedFolder = "$targetFolder/$solutionName/managed"
+        
+        # Create directories
+        New-Item -ItemType Directory -Path $unmanagedFolder -Force
+        New-Item -ItemType Directory -Path $managedFolder -Force
+        
+        Write-Host "✅ Created folder structure:"
+        Write-Host "  - $unmanagedFolder"
+        Write-Host "  - $managedFolder"
+        
+        # Copy managed solution to managed folder
+        Copy-Item "${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}_managed.zip" -Destination "$managedFolder/${{ github.event.inputs.solution_name }}_managed.zip"
+        Write-Host "✅ Copied managed solution to: $managedFolder"
+
+    - name: Run Solution Checker
+      uses: microsoft/powerplatform-actions/check-solution@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        path: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}_managed.zip
+
+    - name: Upload Solution Checker Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: solution-checker-results-${{ github.event.inputs.solution_name }}
+        path: |
+          ${{ runner.temp }}/PowerAppsChecker/**/*
+        retention-days: 30
+      
     - name: Generate timestamp for branch name
       id: timestamp
       run: |
@@ -185,98 +224,7 @@ jobs:
       uses: microsoft/powerplatform-actions/branch-solution@v1
       with:
         solution-folder: ${{ github.event.inputs.solution_folder}}/${{ github.event.inputs.solution_name }}
-        solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.solution_name }}
+        solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.solution_name }}/unmanaged
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         allow-empty-commit: true
         branch-name: ${{ steps.branch-name.outputs.value }}
-
-    - name: Create Pull Request automatically
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const branchName = '${{ steps.branch-name.outputs.value }}';
-          const solutionName = '${{ github.event.inputs.solution_name }}';
-          const version = '${{ steps.version.outputs.number }}';
-          const actor = '${{ github.actor }}';
-          const timestamp = new Date().toLocaleString();
-          
-          // Create PR title and body
-          const title = `🚀 Solution Export: ${solutionName} v${version}`;
-          const body = `## 📦 Automated Solution Export
-          
-          **Solution:** \`${solutionName}\`  
-          **Version:** \`${version}\`  
-          **Exported by:** @${actor}  
-          **Export Date:** ${timestamp}
-          
-          ### 🔍 What's Changed
-          This PR contains the latest changes exported from the DEV environment for the **${solutionName}** solution.
-          
-          ### 📋 Checklist
-          - [x] Solution exported from DEV environment
-          - [x] Version number updated to \`${version}\`
-          - [x] Solution checker validation completed
-          - [ ] Code review completed
-          - [ ] Ready for deployment
-          
-          ### 🚀 Next Steps
-          1. Review the changes in this PR
-          2. Merge to trigger automated deployment to TEST
-          3. Validate in TEST environment
-          4. Deploy to PRODUCTION when ready
-          
-          ### 📊 Solution Checker Results
-          Solution checker results are available in the workflow artifacts.
-          
-          ---
-          *This PR was created automatically by the solution export workflow.*`;
-          
-          try {
-            const { data: pr } = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              head: branchName,
-              base: 'main',
-              draft: false
-            });
-            
-            console.log(`✅ Pull Request created successfully: ${pr.html_url}`);
-            console.log(`📝 PR Number: #${pr.number}`);
-            
-            // Add labels to the PR
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr.number,
-              labels: ['solution-export', 'automated', solutionName]
-            });
-            
-            console.log(`🏷️ Labels added to PR #${pr.number}`);
-            
-          } catch (error) {
-            console.error('❌ Error creating PR:', error.message);
-            // Don't fail the workflow if PR creation fails
-            if (error.message.includes('A pull request already exists')) {
-              console.log('ℹ️ A pull request already exists for this branch');
-            }
-          }
-
-    - name: Run Solution Checker
-      uses: microsoft/powerplatform-actions/check-solution@v1
-      with:
-        environment-url: ${{ vars.ENVIRONMENT_URL }}
-        app-id: ${{ vars.CLIENT_ID }}
-        client-secret: ${{ secrets.PowerPlatformSPN }}
-        tenant-id: ${{ vars.TENANT_ID }}
-        path: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.solution_name }}.zip
-
-    - name: Upload Solution Checker Results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: solution-checker-results-${{ github.event.inputs.solution_name }}
-        path: |
-          ${{ runner.temp }}/PowerAppsChecker/**/*
-        retention-days: 30
