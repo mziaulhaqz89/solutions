@@ -6,7 +6,7 @@
       <LocalizedName description="Core" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.1</Version>
+    <Version>1.0.0.5</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>mzh</UniqueName>
@@ -80,34 +80,30 @@
       </Addresses>
     </Publisher>
     <RootComponents>
-      <RootComponent type="1" schemaName="account" behavior="2" />
-      <RootComponent type="1" schemaName="contact" behavior="2" />
-      <RootComponent type="1" schemaName="email" behavior="2" />
-      <RootComponent type="1" schemaName="mzh_ticket" behavior="2" />
-      <RootComponent type="1" schemaName="phonecall" behavior="2" />
-      <RootComponent type="62" schemaName="mzh_CoreOperation" behavior="0" />
-      <RootComponent type="80" schemaName="mzh_CoreOperation" behavior="0" />
+      <RootComponent type="1" schemaName="account" behavior="0" />
+      <RootComponent type="1" schemaName="contact" behavior="0" />
+      <RootComponent type="1" schemaName="end_businessunit" behavior="0" />
+      <RootComponent type="1" schemaName="end_invoice" behavior="0" />
+      <RootComponent type="1" schemaName="end_project" behavior="0" />
+      <RootComponent type="1" schemaName="mzh_ticket" behavior="0" />
+      <RootComponent type="1" schemaName="mzh_ticketstatus" behavior="0" />
     </RootComponents>
     <MissingDependencies>
       <MissingDependency>
-        <Required type="1" schemaName="mzh_ticket" displayName="Ticket" solution="Active" />
-        <Dependent type="1" schemaName="mzh_ticket" displayName="Ticket" />
+        <Required type="1" schemaName="adx_externalidentity" displayName="External Identity" solution="PowerPages_RuntimeCore (1.0.2402.1)" />
+        <Dependent type="1" schemaName="contact" displayName="Contact" />
       </MissingDependency>
       <MissingDependency>
-        <Required type="60" displayName="Account" parentDisplayName="Account" solution="msdynce_AppCommon (9.0.4.0066)" id="{8448b78f-8f42-454e-8e2a-f8196b0419af}">
-          <package appName="msdynce_AppCommon" version="9.0.25082.10001">msdynce_AppCommonAnchor (9.0.25082.10001)</package>
-        </Required>
-        <Dependent type="60" displayName="Account" parentDisplayName="Account" id="{8448b78f-8f42-454e-8e2a-f8196b0419af}" />
+        <Required type="1" schemaName="adx_invitation" displayName="Invitation" solution="PowerPages_RuntimeCore (1.0.2402.1)" />
+        <Dependent type="1" schemaName="account" displayName="Account" />
       </MissingDependency>
       <MissingDependency>
-        <Required type="61" schemaName="msdyn_/Images/AppModule_Default_Icon.png" displayName="msdyn_/Images/AppModule_Default_Icon.png" solution="AppModuleWebResources (2.5)" />
-        <Dependent type="80" schemaName="mzh_CoreOperation" displayName="Core Operation" />
+        <Required type="1" schemaName="adx_invitation" displayName="Invitation" solution="PowerPages_RuntimeCore (1.0.2402.1)" />
+        <Dependent type="1" schemaName="contact" displayName="Contact" />
       </MissingDependency>
       <MissingDependency>
-        <Required type="SettingDefinition" displayName="AppChannel" solution="msdyn_AppFrameworkInfraExtensions (1.0.0.15)" id.uniquename="AppChannel">
-          <package appName="PowerAppsAppFramework Package" version="1.0.0.23">PowerAppsAppFramework_Anchor (1.0.0.23)</package>
-        </Required>
-        <Dependent type="AppSetting" displayName="parentappmoduleid.uniquename=mzh_CoreOperation,settingdefinitionid.uniquename=AppChannel" id.parentappmoduleid.uniquename="mzh_CoreOperation" id.settingdefinitionid.uniquename="AppChannel" />
+        <Required type="1" schemaName="adx_webformsession" displayName="Multistep Form Session" solution="PowerPages_RuntimeCore (1.0.2402.1)" />
+        <Dependent type="1" schemaName="contact" displayName="Contact" />
       </MissingDependency>
     </MissingDependencies>
   </SolutionManifest>

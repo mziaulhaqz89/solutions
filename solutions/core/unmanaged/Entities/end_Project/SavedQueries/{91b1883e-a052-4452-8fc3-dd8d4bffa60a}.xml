@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>0</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>1</isdefault>
+    <savedqueryid>{91b1883e-a052-4452-8fc3-dd8d4bffa60a}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="end_projectname" select="1" icon="1" preview="1">
+        <row name="result" id="end_projectid">
+          <cell name="end_projectname" width="225" />
+          <cell name="end_businessunitid" width="150" />
+          <cell name="end_startdate" width="150" />
+          <cell name="end_enddate" width="150" />
+          <cell name="end_completiondate" width="150" />
+          <cell name="createdon" width="125" />
+          <cell name="end_invoicingmethod" width="150" />
+          <cell name="end_projectvalue" width="150" />
+          <cell name="end_client" width="100" />
+          <cell name="end_billingfrequency" width="153" />
+          <cell name="end_projectmanager" width="133" />
+          <cell name="end_engagementmanager" width="164" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="end_project">
+          <attribute name="end_projectid" />
+          <attribute name="end_projectname" />
+          <attribute name="createdon" />
+          <order attribute="end_projectname" descending="false" />
+          <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0" />
+          </filter>
+          <attribute name="end_businessunitid" />
+          <attribute name="end_startdate" />
+          <attribute name="end_enddate" />
+          <attribute name="end_completiondate" />
+          <attribute name="end_invoicingmethod" />
+          <attribute name="end_projectvalue" />
+          <attribute name="end_billingfrequency" />
+          <attribute name="end_client" />
+          <attribute name="end_projectmanager" />
+          <attribute name="end_engagementmanager" />
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Active Projects" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>
