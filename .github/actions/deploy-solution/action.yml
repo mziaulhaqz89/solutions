@@ -85,7 +85,7 @@ runs:
           echo "current-version=$currentVersion" >> $env:GITHUB_OUTPUT
           echo "is-managed=$isManaged" >> $env:GITHUB_OUTPUT
           
-          if (${{ inputs.upgrade-mode }} -eq "upgrade") {
+          if ("${{ inputs.upgrade-mode }}" -eq "upgrade") {
             Write-Host "   Strategy: stage-and-upgrade (solution exists)"
           } else {
             Write-Host "   Strategy: update/overwrite (solution exists)"
@@ -102,7 +102,7 @@ runs:
         }
 
     - name: Import MANAGED solution (First Time / Update Mode)
-      if: steps.solution-check.outputs.exists == 'false' || inputs.upgrade-mode == 'update'
+      if: ${{ steps.solution-check.outputs.exists == 'false' || inputs.upgrade-mode == 'update' }}
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
         environment-url: ${{ inputs.environment-url }}
@@ -114,7 +114,7 @@ runs:
         publish-changes: true
 
     - name: Import solution with upgrade (Upgrade Mode - Existing Solution Only)
-      if: steps.solution-check.outputs.exists == 'true' && inputs.upgrade-mode == 'upgrade'
+      if: ${{ steps.solution-check.outputs.exists == 'true' && inputs.upgrade-mode == 'upgrade' }}
       uses: microsoft/powerplatform-actions/import-solution@v1
       with:
         environment-url: ${{ inputs.environment-url }}
