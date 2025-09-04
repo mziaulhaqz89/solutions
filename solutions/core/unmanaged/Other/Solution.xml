@@ -6,7 +6,7 @@
       <LocalizedName description="Core" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.9</Version>
+    <Version>1.0.0.10</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>mzh</UniqueName>
@@ -85,13 +85,6 @@
       <RootComponent type="1" schemaName="end_businessunit" behavior="0" />
       <RootComponent type="1" schemaName="end_invoice" behavior="0" />
       <RootComponent type="1" schemaName="end_project" behavior="0" />
-      <RootComponent type="1" schemaName="mzh_assignee" behavior="0" />
-      <RootComponent type="1" schemaName="mzh_coffeemachine" behavior="0" />
-      <RootComponent type="1" schemaName="mzh_country" behavior="0" />
-      <RootComponent type="1" schemaName="mzh_destination" behavior="0" />
-      <RootComponent type="1" schemaName="mzh_ticket" behavior="0" />
-      <RootComponent type="1" schemaName="mzh_ticketstatus" behavior="0" />
-      <RootComponent type="1" schemaName="mzh_travel" behavior="0" />
       <RootComponent type="62" schemaName="mzh_CoreOperation" behavior="0" />
       <RootComponent type="80" schemaName="mzh_CoreOperation" behavior="0" />
       <RootComponent type="9" schemaName="mzh_destinationtype" behavior="0" />
