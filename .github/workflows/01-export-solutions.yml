@@ -190,6 +190,157 @@ jobs:
         path: |
           ${{ runner.temp }}/PowerAppsChecker/**/*
         retention-days: 30
+
+    - name: Analyze Solution Dependencies
+      id: dependencies
+      run: |
+        Write-Host "=== SOLUTION DEPENDENCY ANALYSIS ==="
+        Write-Host "Analyzing solution: ${{ github.event.inputs.solution_name }}"
+        Write-Host ""
+        
+        $solutionXmlPath = "${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.solution_name }}/unmanaged/Other/Solution.xml"
+        
+        if (-not (Test-Path $solutionXmlPath)) {
+          Write-Host "⚠️  Warning: Could not find Solution.xml at $solutionXmlPath"
+          exit 0
+        }
+        
+        Write-Host "Reading solution dependencies from: $solutionXmlPath"
+        [xml]$solutionXml = Get-Content $solutionXmlPath
+        
+        $solutionUniqueName = $solutionXml.ImportExportXml.SolutionManifest.UniqueName
+        $solutionVersion = $solutionXml.ImportExportXml.SolutionManifest.Version
+        Write-Host "Solution: $solutionUniqueName v$solutionVersion"
+        Write-Host ""
+        
+        # Check for explicit dependencies
+        $dependencies = $solutionXml.ImportExportXml.SolutionManifest.Dependencies.Dependency
+        Write-Host "📋 EXPLICIT DEPENDENCIES:"
+        if ($dependencies) {
+          if ($dependencies.Count) {
+            foreach ($dep in $dependencies) {
+              $depName = $dep.solution
+              $depVersion = $dep.version
+              Write-Host "  ✅ $depName (v$depVersion)"
+            }
+          } else {
+            $depName = $dependencies.solution
+            $depVersion = $dependencies.version
+            Write-Host "  ✅ $depName (v$depVersion)"
+          }
+        } else {
+          Write-Host "  ℹ️  No explicit dependencies declared"
+        }
+        Write-Host ""
+        
+        # Check for missing dependencies (implicit dependencies that may cause deployment issues)
+        $missingDeps = $solutionXml.ImportExportXml.SolutionManifest.MissingDependencies.MissingDependency
+        Write-Host "⚠️  MISSING/IMPLICIT DEPENDENCIES:"
+        if ($missingDeps) {
+          Write-Host "  Found $($missingDeps.Count) missing dependencies that may cause deployment issues:"
+          Write-Host ""
+          
+          $uniqueSolutions = @{}
+          
+          foreach ($missing in $missingDeps) {
+            $requiredSolution = $missing.Required.solution
+            $requiredType = $missing.Required.type
+            $requiredDisplay = $missing.Required.displayName
+            $dependentDisplay = $missing.Dependent.displayName
+            
+            if ($requiredSolution -and $requiredSolution -ne "Active") {
+              if (-not $uniqueSolutions.ContainsKey($requiredSolution)) {
+                $package = $missing.Required.package
+                if ($package) {
+                  $packageName = $package.appName
+                  $packageVersion = $package.version
+                  Write-Host "    🔴 REQUIRED: $requiredSolution"
+                  Write-Host "       Package: $packageName v$packageVersion"
+                  Write-Host "       Needed by: $dependentDisplay"
+                  Write-Host ""
+                  $uniqueSolutions[$requiredSolution] = $packageName
+                } else {
+                  Write-Host "    🔴 REQUIRED: $requiredSolution"
+                  Write-Host "       Type: $requiredType"
+                  Write-Host "       Needed by: $dependentDisplay"
+                  Write-Host ""
+                  $uniqueSolutions[$requiredSolution] = "Unknown"
+                }
+              }
+            } else {
+              Write-Host "    🟡 COMPONENT: $requiredDisplay (Type: $requiredType)"
+              Write-Host "       Needed by: $dependentDisplay"
+              Write-Host ""
+            }
+          }
+          
+          Write-Host "📋 DEPLOYMENT REQUIREMENTS SUMMARY:"
+          Write-Host "Before deploying this solution to target environments, ensure these solutions/packages are installed:"
+          foreach ($sol in $uniqueSolutions.Keys) {
+            $package = $uniqueSolutions[$sol]
+            Write-Host "  • $sol ($package)"
+          }
+          
+          # Create dependency artifact for deployment pipeline
+          $dependencyInfo = @{
+            solutionName = $solutionUniqueName
+            solutionVersion = $solutionVersion
+            exportedAt = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss UTC")
+            explicitDependencies = @()
+            missingDependencies = @()
+          }
+          
+          if ($dependencies) {
+            if ($dependencies.Count) {
+              foreach ($dep in $dependencies) {
+                $dependencyInfo.explicitDependencies += @{
+                  solution = $dep.solution
+                  version = $dep.version
+                }
+              }
+            } else {
+              $dependencyInfo.explicitDependencies += @{
+                solution = $dependencies.solution
+                version = $dependencies.version
+              }
+            }
+          }
+          
+          foreach ($sol in $uniqueSolutions.Keys) {
+            $dependencyInfo.missingDependencies += @{
+              solution = $sol
+              package = $uniqueSolutions[$sol]
+            }
+          }
+          
+          # Save dependency info as JSON for deployment pipeline
+          $dependencyJson = $dependencyInfo | ConvertTo-Json -Depth 3
+          $dependencyPath = "${{ github.event.inputs.solution_exported_folder}}/dependencies-${{ github.event.inputs.solution_name }}.json"
+          New-Item -Path (Split-Path $dependencyPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
+          $dependencyJson | Out-File -FilePath $dependencyPath -Encoding UTF8
+          
+          Write-Host ""
+          Write-Host "💾 Dependency information saved to: $dependencyPath"
+          
+        } else {
+          Write-Host "  ✅ No missing dependencies detected"
+        }
+        
+        Write-Host ""
+        Write-Host "=== NEXT STEPS ==="
+        Write-Host "1. Review solution checker results for quality issues"
+        Write-Host "2. Ensure target environments have required dependencies installed"
+        Write-Host "3. Deploy dependencies before deploying this solution"
+        Write-Host "4. Monitor deployment logs for dependency-related errors"
+
+    - name: Upload Dependencies Analysis
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dependencies-${{ github.event.inputs.solution_name }}
+        path: |
+          ${{ github.event.inputs.solution_exported_folder}}/dependencies-*.json
+        retention-days: 30
       
     - name: Generate timestamp for branch name
       id: timestamp
