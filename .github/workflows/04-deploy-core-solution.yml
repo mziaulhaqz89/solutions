@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  deploy-core-solution:
+  deploy-core:
     uses: ./.github/workflows/shared-deployment-pipeline.yml
     with:
       solution_name: core    
