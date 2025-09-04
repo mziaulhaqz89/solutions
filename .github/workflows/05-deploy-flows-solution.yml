@@ -1,21 +1,21 @@
-name: 02-Deploy Core Solution
-# Deploy core to TEST and PRODUCTION environments
-# Triggers when core is updated or manually
+name: 02-Deploy flows Solution
+# Deploy flows to TEST and PRODUCTION environments
+# Triggers when flows is updated or manually
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths: 
-      - 'solutions/core/**'
+      - 'solutions/flows/**'
 
 permissions:
   contents: write
 
 jobs:
-  core:
+  flows:
     uses: ./.github/workflows/shared-deployment-pipeline.yml
     with:
-      solution_name: core    
+      solution_name: flows    
     secrets:
       envSecret: ${{ secrets.PowerPlatformSPN }}

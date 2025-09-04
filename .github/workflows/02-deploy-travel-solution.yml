@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 jobs:
-  deploy-travel:
+  travel:
     uses: ./.github/workflows/shared-deployment-pipeline.yml
     with:
       solution_name: travelsolution    
