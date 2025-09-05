@@ -265,7 +265,6 @@ jobs:
             Write-Host "ℹ️ Proceeding with export - if entity '$componentName' doesn't exist, export will fail with clear message"
             $entityFound = $true  # Allow export to proceed
           }
-          }
           
           # Approach 3: Final fallback - defer to export process
           if (-not $entityFound) {
