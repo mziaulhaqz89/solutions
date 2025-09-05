@@ -130,7 +130,7 @@ runs:
         activate-plugins: true
         skip-dependency-check: false
         convert-to-managed: false
-        run-asynchronously: false
+        run-asynchronously: true
         max-async-wait-time: 60
         force-overwrite: true
 
