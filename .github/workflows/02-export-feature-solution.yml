@@ -1,0 +1,435 @@
+name: 02-Export Feature Solution
+# Export feature solution from DEV environment and push to feature branch
+# Supports feature solutions: Corefeature1, Corefeature2, Pluginsfeature1, etc.
+
+run-name: 02-Export Feature Solution - ${{ inputs.feature_solution_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      # Select the feature solution to export
+      feature_solution_name:
+        description: 'Select the feature solution to export from Power Platform'
+        required: true
+        type: choice
+        options:
+          - Corefeature1
+          - Corefeature2
+          - Pluginsfeature1
+          - Pluginsfeature2
+          - Flowsfeature1
+          - Flowsfeature2
+      # Base solution that this feature belongs to
+      base_solution:
+        description: 'Base solution that this feature extends'
+        required: true
+        type: choice
+        options:
+          - coresolution
+          - solution1
+          - solution2
+          - flows
+      # Optional custom branch name
+      custom_branch_name:
+        description: 'Custom branch name (optional - leave empty for auto-generated)'
+        required: false
+        type: string
+      # Create PR automatically
+      create_pull_request:
+        description: 'Create Pull Request automatically after export'
+        required: true
+        type: boolean
+        default: true
+      #Do Not change these values
+      solution_exported_folder:
+        description: 'folder name for staging the exported solution *do not change*'
+        required: true
+        default: out/exported/
+      solution_folder:
+        description: 'folder name for staging the unpacked solution folder before check-in *do not change*'
+        required: true
+        default: out/solutions/
+      solution_target_folder:
+        description: 'folder name to be created and checked in *do not change*'
+        required: true
+        default: solutions/
+        
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  export-feature-solution:
+    runs-on: windows-latest
+    environment: DEV
+    env:
+      RUNNER_DEBUG: 1
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Install Power Platform CLI
+      uses: microsoft/powerplatform-actions/actions-install@v1
+
+    - name: who-am-i action
+      uses: microsoft/powerplatform-actions/who-am-i@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+
+    - name: Validate Feature Solution Exists
+      id: validate
+      run: |
+        Write-Host "=== VALIDATING FEATURE SOLUTION ==="
+        Write-Host "Feature Solution: ${{ github.event.inputs.feature_solution_name }}"
+        Write-Host "Base Solution: ${{ github.event.inputs.base_solution }}"
+        Write-Host ""
+        
+        # Check current authentication status
+        Write-Host "Checking authentication status..."
+        $authOutput = & $env:POWERPLATFORMTOOLS_PACPATH auth list
+        Write-Host "Auth status: $authOutput"
+        
+        # If no authentication is found, authenticate using the same credentials as who-am-i
+        if ($LASTEXITCODE -ne 0 -or $authOutput -like "*No profiles*") {
+          Write-Host "No authentication found, creating auth profile..."
+          & $env:POWERPLATFORMTOOLS_PACPATH auth create --environment ${{ vars.ENVIRONMENT_URL }} --applicationId ${{ vars.CLIENT_ID }} --clientSecret ${{ secrets.PowerPlatformSPN }} --tenant ${{ vars.TENANT_ID }}
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Authentication failed with exit code: $LASTEXITCODE"
+            exit 1
+          }
+        }
+        
+        # Get current solution list in JSON format
+        Write-Host "Getting solution list..."
+        $output = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json --environment ${{ vars.ENVIRONMENT_URL }}
+        
+        # Check if pac command succeeded
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "PAC command failed with exit code: $LASTEXITCODE"
+          Write-Host "Output: $output"
+          exit 1
+        }
+        
+        # Parse JSON and find the feature solution
+        $solutions = $output | ConvertFrom-Json
+        $featureSolution = $solutions | Where-Object { $_.SolutionUniqueName -eq "${{ github.event.inputs.feature_solution_name }}" }
+        $baseSolution = $solutions | Where-Object { $_.SolutionUniqueName -eq "${{ github.event.inputs.base_solution }}" }
+        
+        # Check if feature solution was found
+        if (-not $featureSolution) {
+          Write-Host "❌ Feature solution '${{ github.event.inputs.feature_solution_name }}' not found in environment"
+          Write-Host "Available solutions:"
+          $solutions | ForEach-Object { Write-Host "  - $($_.SolutionUniqueName)" }
+          exit 1
+        }
+        
+        # Check if base solution exists
+        if (-not $baseSolution) {
+          Write-Host "⚠️  Warning: Base solution '${{ github.event.inputs.base_solution }}' not found in environment"
+          Write-Host "This might be expected if the base solution is in a different environment"
+        }
+        
+        Write-Host "✅ Feature solution found: $($featureSolution.SolutionUniqueName) v$($featureSolution.VersionNumber)"
+        if ($baseSolution) {
+          Write-Host "✅ Base solution found: $($baseSolution.SolutionUniqueName) v$($baseSolution.VersionNumber)"
+        }
+        
+        # Store solution info for later steps
+        echo "feature_version=$($featureSolution.VersionNumber)" >> $env:GITHUB_OUTPUT
+        echo "feature_display_name=$($featureSolution.FriendlyName)" >> $env:GITHUB_OUTPUT
+
+    - name: Get Current Solution Version and Increment
+      id: version
+      run: |
+        # Get current solution list in JSON format
+        Write-Host "Getting solution version for increment..."
+        $output = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json --environment ${{ vars.ENVIRONMENT_URL }}
+        
+        # Parse JSON and find the specific solution
+        $solutions = $output | ConvertFrom-Json
+        $currentSolution = $solutions | Where-Object { $_.SolutionUniqueName -eq "${{ github.event.inputs.feature_solution_name }}" }
+        
+        # Get current version
+        $currentVersion = $currentSolution.VersionNumber
+        Write-Host "Current version found: $currentVersion"
+        
+        # Parse version numbers (format: major.minor.build.revision)
+        $versionParts = $currentVersion.Split('.')
+        $major = [int]$versionParts[0]
+        $minor = [int]$versionParts[1] 
+        $build = [int]$versionParts[2]
+        $revision = [int]$versionParts[3]
+        
+        # Increment revision number
+        $revision++
+        $newVersion = "$major.$minor.$build.$revision"
+        
+        echo "number=$newVersion" >> $env:GITHUB_OUTPUT
+        Write-Host "New version will be: $newVersion"
+
+    - name: Set Online Solution Version
+      uses: microsoft/powerplatform-actions/set-online-solution-version@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        name: ${{ github.event.inputs.feature_solution_name }}
+        version: ${{ steps.version.outputs.number }}
+
+    - name: export-solution action (unmanaged)
+      uses: microsoft/powerplatform-actions/export-solution@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-name: ${{ github.event.inputs.feature_solution_name }}
+        solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.feature_solution_name }}_unmanaged.zip
+        
+    - name: export-solution action (managed)
+      uses: microsoft/powerplatform-actions/export-solution@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-name: ${{ github.event.inputs.feature_solution_name }}
+        managed: true
+        solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.feature_solution_name }}_managed.zip
+
+    - name: unpack-solution action (unmanaged)
+      uses: microsoft/powerplatform-actions/unpack-solution@v1
+      with:
+        solution-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.feature_solution_name }}_unmanaged.zip
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}/unmanaged
+        solution-type: 'Unmanaged'
+        overwrite-files: true
+
+    - name: unpack-solution action (managed)
+      uses: microsoft/powerplatform-actions/unpack-solution@v1
+      with:
+        solution-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.feature_solution_name }}_managed.zip
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}/managed
+        solution-type: 'Managed'
+        overwrite-files: true
+
+    - name: Run Solution Checker
+      uses: microsoft/powerplatform-actions/check-solution@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        path: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.feature_solution_name }}_managed.zip
+
+    - name: Upload Solution Checker Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: solution-checker-results-${{ github.event.inputs.feature_solution_name }}
+        path: |
+          ${{ runner.temp }}/PowerAppsChecker/**/*
+        retention-days: 30
+
+    - name: Analyze Feature Solution Dependencies
+      id: dependencies
+      run: |
+        Write-Host "=== FEATURE SOLUTION DEPENDENCY ANALYSIS ==="
+        Write-Host "Analyzing feature solution: ${{ github.event.inputs.feature_solution_name }}"
+        Write-Host "Base solution: ${{ github.event.inputs.base_solution }}"
+        Write-Host ""
+        
+        $solutionXmlPath = "${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}/unmanaged/Other/Solution.xml"
+        
+        if (-not (Test-Path $solutionXmlPath)) {
+          Write-Host "⚠️  Warning: Could not find Solution.xml at $solutionXmlPath"
+          exit 0
+        }
+        
+        Write-Host "Reading solution dependencies from: $solutionXmlPath"
+        [xml]$solutionXml = Get-Content $solutionXmlPath
+        
+        $solutionUniqueName = $solutionXml.ImportExportXml.SolutionManifest.UniqueName
+        $solutionVersion = $solutionXml.ImportExportXml.SolutionManifest.Version
+        Write-Host "Feature Solution: $solutionUniqueName v$solutionVersion"
+        Write-Host ""
+        
+        # Check for explicit dependencies
+        $dependencies = $solutionXml.ImportExportXml.SolutionManifest.Dependencies.Dependency
+        Write-Host "📋 FEATURE SOLUTION DEPENDENCIES:"
+        $hasBaseDependency = $false
+        
+        if ($dependencies) {
+          if ($dependencies.Count) {
+            foreach ($dep in $dependencies) {
+              $depName = $dep.solution
+              $depVersion = $dep.version
+              Write-Host "  ✅ $depName (v$depVersion)"
+              if ($depName -eq "${{ github.event.inputs.base_solution }}") {
+                $hasBaseDependency = $true
+                Write-Host "    🔗 Base solution dependency detected"
+              }
+            }
+          } else {
+            $depName = $dependencies.solution
+            $depVersion = $dependencies.version
+            Write-Host "  ✅ $depName (v$depVersion)"
+            if ($depName -eq "${{ github.event.inputs.base_solution }}") {
+              $hasBaseDependency = $true
+              Write-Host "    🔗 Base solution dependency detected"
+            }
+          }
+        } else {
+          Write-Host "  ⚠️  No explicit dependencies declared"
+        }
+        
+        if (-not $hasBaseDependency) {
+          Write-Host "  ⚠️  WARNING: Feature solution does not explicitly depend on base solution '${{ github.event.inputs.base_solution }}'"
+          Write-Host "    This may cause deployment issues. Consider adding the base solution as a dependency."
+        }
+        
+        Write-Host ""
+        Write-Host "📋 DEPLOYMENT RECOMMENDATIONS:"
+        Write-Host "1. Ensure base solution '${{ github.event.inputs.base_solution }}' is deployed first"
+        Write-Host "2. Deploy this feature solution after base solution"
+        Write-Host "3. Test feature functionality in target environment"
+        Write-Host "4. Monitor for any dependency-related issues"
+
+    - name: Upload Dependencies Analysis
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dependencies-${{ github.event.inputs.feature_solution_name }}
+        path: |
+          ${{ github.event.inputs.solution_exported_folder}}/dependencies-*.json
+        retention-days: 30
+      
+    - name: Generate timestamp for branch name
+      id: timestamp
+      run: |
+        $timestamp = Get-Date -Format "yyyyMMdd-HHmm"
+        echo "value=$timestamp" >> $env:GITHUB_OUTPUT
+
+    - name: Generate branch name for feature
+      id: branch-name
+      run: |
+        if ("${{ github.event.inputs.custom_branch_name }}" -ne "") {
+          $branchName = "${{ github.event.inputs.custom_branch_name }}"
+        } else {
+          # Create feature branch name based on feature solution name
+          $featureName = "${{ github.event.inputs.feature_solution_name }}".ToLower()
+          $branchName = "feature/$featureName-by-${{ github.actor }}-${{ steps.timestamp.outputs.value }}"
+        }
+        echo "value=$branchName" >> $env:GITHUB_OUTPUT
+        Write-Host "Feature branch name: $branchName"
+
+    - name: branch-solution, prepare it for a PullRequest
+      uses: microsoft/powerplatform-actions/branch-solution@v1
+      with:
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}
+        solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        allow-empty-commit: true
+        branch-name: ${{ steps.branch-name.outputs.value }}
+        clobber-branch: true
+
+    - name: Create Pull Request
+      if: ${{ github.event.inputs.create_pull_request == 'true' }}
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const { data: pr } = await github.rest.pulls.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `🚀 Feature: ${{ github.event.inputs.feature_solution_name }} v${{ steps.version.outputs.number }}`,
+            head: `${{ steps.branch-name.outputs.value }}`,
+            base: 'main',
+            body: `## Feature Solution Export: ${{ github.event.inputs.feature_solution_name }}
+          
+          ### 📋 **Solution Details**
+          - **Feature Solution**: ${{ github.event.inputs.feature_solution_name }} 
+          - **Version**: ${{ steps.version.outputs.number }}
+          - **Base Solution**: ${{ github.event.inputs.base_solution }}
+          - **Developer**: @${{ github.actor }}
+          - **Export Date**: ${{ steps.timestamp.outputs.value }}
+          
+          ### 🔍 **What's Included**
+          This PR contains the exported feature solution with:
+          - Unmanaged solution components
+          - Managed solution components  
+          - Solution checker analysis results
+          - Dependency analysis
+          
+          ### ✅ **Pre-Deployment Checklist**
+          - [ ] Base solution '${{ github.event.inputs.base_solution }}' is deployed in target environment
+          - [ ] Solution checker results reviewed (see artifacts)
+          - [ ] Feature functionality tested in DEV environment
+          - [ ] Dependencies verified and documented
+          - [ ] Breaking changes identified and documented
+          
+          ### 🚦 **Deployment Order**
+          1. Ensure base solution is deployed first
+          2. Deploy this feature solution
+          3. Test feature-specific functionality
+          4. Validate integration with base solution
+          
+          ### 📊 **Quality Gates**
+          - Solution Checker: ✅ (see artifacts for details)
+          - Dependency Analysis: ✅ (see artifacts for details)
+          
+          ### 🔗 **Related Links**
+          - [Solution Checker Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - [Dependency Analysis](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          ---
+          *This PR was automatically created by the Feature Solution Export workflow.*`
+          });
+          
+          console.log(`Pull Request created: ${pr.html_url}`);
+          
+          // Add labels to the PR
+          await github.rest.issues.addLabels({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: pr.number,
+            labels: ['feature-solution', 'power-platform', `base:${{ github.event.inputs.base_solution }}`, `solution:${{ github.event.inputs.feature_solution_name }}`]
+          });
+
+    - name: Summary Report
+      run: |
+        Write-Host "=== 🎉 FEATURE SOLUTION EXPORT COMPLETED ==="
+        Write-Host ""
+        Write-Host "📦 **Exported Solution**: ${{ github.event.inputs.feature_solution_name }}"
+        Write-Host "🏷️  **Version**: ${{ steps.version.outputs.number }}"
+        Write-Host "🌿 **Branch**: ${{ steps.branch-name.outputs.value }}"
+        Write-Host "🔗 **Base Solution**: ${{ github.event.inputs.base_solution }}"
+        Write-Host "👨‍💻 **Developer**: ${{ github.actor }}"
+        Write-Host ""
+        Write-Host "### 📁 **Solution Structure**"
+        Write-Host "```"
+        Write-Host "solutions/"
+        Write-Host "└── ${{ github.event.inputs.feature_solution_name }}/"
+        Write-Host "    ├── managed/     # Managed solution components"
+        Write-Host "    └── unmanaged/   # Unmanaged solution components"
+        Write-Host "```"
+        Write-Host ""
+        Write-Host "### 🚀 **Next Steps**"
+        Write-Host "1. Review the Pull Request that was created"
+        Write-Host "2. Check solution checker results in artifacts"
+        Write-Host "3. Verify dependency analysis"
+        Write-Host "4. Get PR approval from solution architect/lead"
+        Write-Host "5. Merge to main after approval"
+        Write-Host ""
+        Write-Host "### ⚡ **Quick Actions**"
+        Write-Host "- View artifacts: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        Write-Host "- Branch: ${{ steps.branch-name.outputs.value }}"
+        Write-Host ""
+        Write-Host "✅ Feature solution export workflow completed successfully!"
