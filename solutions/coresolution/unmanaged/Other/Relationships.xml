@@ -5,7 +5,6 @@
   <EntityRelationship Name="business_unit_cicd_course" />
   <EntityRelationship Name="business_unit_cicd_enrollment" />
   <EntityRelationship Name="business_unit_cicd_sol1" />
-  <EntityRelationship Name="business_unit_cicd_sol2" />
   <EntityRelationship Name="business_unit_cicd_student" />
   <EntityRelationship Name="business_unit_end_businessunit" />
   <EntityRelationship Name="business_unit_end_invoice" />
@@ -28,8 +27,6 @@
   <EntityRelationship Name="lk_cicd_enrollment_modifiedby" />
   <EntityRelationship Name="lk_cicd_sol1_createdby" />
   <EntityRelationship Name="lk_cicd_sol1_modifiedby" />
-  <EntityRelationship Name="lk_cicd_sol2_createdby" />
-  <EntityRelationship Name="lk_cicd_sol2_modifiedby" />
   <EntityRelationship Name="lk_cicd_student_createdby" />
   <EntityRelationship Name="lk_cicd_student_modifiedby" />
   <EntityRelationship Name="lk_end_businessunit_createdby" />
@@ -44,7 +41,6 @@
   <EntityRelationship Name="owner_cicd_course" />
   <EntityRelationship Name="owner_cicd_enrollment" />
   <EntityRelationship Name="owner_cicd_sol1" />
-  <EntityRelationship Name="owner_cicd_sol2" />
   <EntityRelationship Name="owner_cicd_student" />
   <EntityRelationship Name="owner_end_businessunit" />
   <EntityRelationship Name="owner_end_invoice" />
@@ -55,7 +51,6 @@
   <EntityRelationship Name="team_cicd_course" />
   <EntityRelationship Name="team_cicd_enrollment" />
   <EntityRelationship Name="team_cicd_sol1" />
-  <EntityRelationship Name="team_cicd_sol2" />
   <EntityRelationship Name="team_cicd_student" />
   <EntityRelationship Name="team_end_businessunit" />
   <EntityRelationship Name="team_end_invoice" />
@@ -65,7 +60,6 @@
   <EntityRelationship Name="user_cicd_course" />
   <EntityRelationship Name="user_cicd_enrollment" />
   <EntityRelationship Name="user_cicd_sol1" />
-  <EntityRelationship Name="user_cicd_sol2" />
   <EntityRelationship Name="user_cicd_student" />
   <EntityRelationship Name="user_end_businessunit" />
   <EntityRelationship Name="user_end_invoice" />
