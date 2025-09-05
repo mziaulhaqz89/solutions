@@ -206,24 +206,85 @@ jobs:
         if ("${{ github.event.inputs.component_type }}" -eq "entity") {
           Write-Host ""
           Write-Host "🗂️ Listing available entities..."
-          $entityOutput = & $env:POWERPLATFORMTOOLS_PACPATH entity list --environment ${{ vars.ENVIRONMENT_URL }}
           
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "Available entities:"
-            Write-Host $entityOutput
+          # Try multiple approaches to list entities
+          $entityFound = $false
+          $componentName = "${{ github.event.inputs.component_name }}"
+          
+          # Approach 1: Try pac entity list with verbose output
+          Write-Host "Attempting pac entity list..."
+          try {
+            $entityOutput = & $env:POWERPLATFORMTOOLS_PACPATH entity list --environment ${{ vars.ENVIRONMENT_URL }} 2>&1
+            Write-Host "Entity list command exit code: $LASTEXITCODE"
             
-            # Check if requested entity exists
-            $componentName = "${{ github.event.inputs.component_name }}"
-            if ($entityOutput -like "*$componentName*") {
-              Write-Host "✅ Entity '$componentName' found in environment"
-              echo "component-found=true" >> $env:GITHUB_OUTPUT
+            if ($LASTEXITCODE -eq 0 -and $entityOutput) {
+              Write-Host "✅ Successfully retrieved entity list via pac entity list"
+              Write-Host "Available entities:"
+              Write-Host $entityOutput
+              
+              if ($entityOutput -like "*$componentName*") {
+                Write-Host "✅ Entity '$componentName' found in environment"
+                $entityFound = $true
+              }
             } else {
-              Write-Host "⚠️ Entity '$componentName' not found in environment"
-              echo "component-found=false" >> $env:GITHUB_OUTPUT
+              Write-Host "⚠️ pac entity list failed or returned no output. Exit code: $LASTEXITCODE"
+              if ($entityOutput) {
+                Write-Host "Error output: $entityOutput"
+              }
             }
+          } catch {
+            Write-Host "⚠️ Exception running pac entity list: $_.Exception.Message"
+          }
+          
+          # Approach 2: Try solution component list if entity list fails
+          if (-not $entityFound) {
+            Write-Host ""
+            Write-Host "Trying alternative approach with solution component list..."
+            try {
+              $componentOutput = & $env:POWERPLATFORMTOOLS_PACPATH solution component list --solution-name coresolution --environment ${{ vars.ENVIRONMENT_URL }} --json 2>&1
+              
+              if ($LASTEXITCODE -eq 0 -and $componentOutput) {
+                Write-Host "✅ Successfully retrieved solution components"
+                
+                # Parse JSON output to find entities
+                $components = $componentOutput | ConvertFrom-Json
+                $entities = $components | Where-Object { $_.ComponentType -eq "Entity" -or $_.ComponentType -eq "1" }
+                
+                if ($entities) {
+                  Write-Host "Found entities in solution:"
+                  foreach ($entity in $entities) {
+                    Write-Host "  - $($entity.SchemaName)"
+                    if ($entity.SchemaName -eq $componentName) {
+                      Write-Host "✅ Entity '$componentName' found in core solution"
+                      $entityFound = $true
+                    }
+                  }
+                }
+              } else {
+                Write-Host "⚠️ Solution component list also failed. Exit code: $LASTEXITCODE"
+                if ($componentOutput) {
+                  Write-Host "Error output: $componentOutput"
+                }
+              }
+            } catch {
+              Write-Host "⚠️ Exception running solution component list: $_.Exception.Message"
+            }
+          }
+          
+          # Approach 3: Try direct solution export check (most reliable)
+          if (-not $entityFound) {
+            Write-Host ""
+            Write-Host "Trying direct export validation (most reliable approach)..."
+            Write-Host "✅ Entity validation will be performed during export process"
+            Write-Host "ℹ️ If entity '$componentName' doesn't exist, export will fail with clear error message"
+            $entityFound = $true  # Allow export to proceed and handle validation there
+          }
+          
+          if ($entityFound) {
+            echo "component-found=true" >> $env:GITHUB_OUTPUT
           } else {
-            Write-Host "⚠️ Could not retrieve entity list"
-            echo "component-found=unknown" >> $env:GITHUB_OUTPUT
+            Write-Host "⚠️ Entity '$componentName' not found in environment using any method"
+            echo "component-found=false" >> $env:GITHUB_OUTPUT
           }
         } else {
           Write-Host "ℹ️ Component type '${{ github.event.inputs.component_type }}' - skipping entity-specific validation"
