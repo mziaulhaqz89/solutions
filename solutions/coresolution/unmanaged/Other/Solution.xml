@@ -5,8 +5,10 @@
     <LocalizedNames>
       <LocalizedName description="coresolution" languagecode="1033" />
     </LocalizedNames>
-    <Descriptions />
-    <Version>1.0.0.7</Version>
+    <Descriptions>
+      <Description description="Upgrade of coresolution" languagecode="1033" />
+    </Descriptions>
+    <Version>1.1.0.1</Version>
     <Managed>0</Managed>
     <Publisher>
       <UniqueName>cicdpoc</UniqueName>
