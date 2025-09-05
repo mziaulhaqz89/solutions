@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>0</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>1</isdefault>
+    <savedqueryid>{e500e208-9b5b-477d-8566-4c010daae1c7}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="cicd_metadataname" select="1" icon="1" preview="1">
+        <row name="result" id="cicd_metadata1id">
+          <cell name="cicd_metadataname" width="300" />
+          <cell name="cicd_value" width="150" />
+          <cell name="cicd_solutionid" width="150" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="cicd_metadata1">
+          <attribute name="cicd_metadata1id" />
+          <attribute name="cicd_metadataname" />
+          <attribute name="createdon" />
+          <order attribute="cicd_metadataname" descending="false" />
+          <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0" />
+          </filter>
+          <attribute name="cicd_value" />
+          <attribute name="cicd_solutionid" />
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Active Metadata1S" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>
