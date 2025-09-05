@@ -13,6 +13,8 @@ on:
         required: true
         type: choice
         options:
+          - solution1
+          - solution2
           - coresolution
           - flows
       # Optional custom branch name
