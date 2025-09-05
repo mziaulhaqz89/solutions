@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>0</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>1</isdefault>
+    <savedqueryid>{2fe917b0-808c-4d87-88e5-0f89315d2d83}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="cicd_name1" select="1" icon="1" preview="1">
+        <row name="result" id="cicd_sol1id">
+          <cell name="cicd_name1" width="300" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="cicd_sol1">
+          <attribute name="cicd_sol1id" />
+          <attribute name="cicd_name1" />
+          <attribute name="createdon" />
+          <order attribute="cicd_name1" descending="false" />
+          <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0" />
+          </filter>
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Active sol1S" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>

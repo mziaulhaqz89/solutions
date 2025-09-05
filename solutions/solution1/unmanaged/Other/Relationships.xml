@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<EntityRelationships xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <EntityRelationship Name="business_unit_cicd_metadata1" />
+  <EntityRelationship Name="business_unit_cicd_sol1" />
+  <EntityRelationship Name="business_unit_cicd_solution1" />
+  <EntityRelationship Name="cicd_metadata1_cicd_solutionid_cicd_solution1" />
+  <EntityRelationship Name="lk_cicd_metadata1_createdby" />
+  <EntityRelationship Name="lk_cicd_metadata1_modifiedby" />
+  <EntityRelationship Name="lk_cicd_sol1_createdby" />
+  <EntityRelationship Name="lk_cicd_sol1_modifiedby" />
+  <EntityRelationship Name="lk_cicd_solution1_createdby" />
+  <EntityRelationship Name="lk_cicd_solution1_modifiedby" />
+  <EntityRelationship Name="owner_cicd_metadata1" />
+  <EntityRelationship Name="owner_cicd_sol1" />
+  <EntityRelationship Name="owner_cicd_solution1" />
+  <EntityRelationship Name="team_cicd_metadata1" />
+  <EntityRelationship Name="team_cicd_sol1" />
+  <EntityRelationship Name="team_cicd_solution1" />
+  <EntityRelationship Name="user_cicd_metadata1" />
+  <EntityRelationship Name="user_cicd_sol1" />
+  <EntityRelationship Name="user_cicd_solution1" />
+</EntityRelationships>
