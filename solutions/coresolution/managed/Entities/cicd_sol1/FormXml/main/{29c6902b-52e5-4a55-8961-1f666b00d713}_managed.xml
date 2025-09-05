@@ -83,6 +83,14 @@
                         <control id="cicd_col4" classid="{4273EDBD-AC1D-40D3-9FB2-095C621B552D}" datafieldname="cicd_col4" disabled="false" />
                       </cell>
                     </row>
+                    <row>
+                      <cell id="{a031d10f-e0ed-4e8f-93dc-a15b705c02a9}" locklevel="0" colspan="1" rowspan="1">
+                        <labels>
+                          <label description="" languagecode="1033" />
+                        </labels>
+                        <control id="cicd_col5" classid="{4273EDBD-AC1D-40D3-9FB2-095C621B552D}" datafieldname="cicd_col5" disabled="false" />
+                      </cell>
+                    </row>
                   </rows>
                 </section>
               </sections>

@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ImportExportXml version="9.2.25084.131" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.25084.131" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.25084.00136">
   <SolutionManifest>
-    <UniqueName>coresolution</UniqueName>
+    <UniqueName>Corefeature1</UniqueName>
     <LocalizedNames>
-      <LocalizedName description="coresolution" languagecode="1033" />
+      <LocalizedName description="Corefeature1" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.7</Version>
+    <Version>1.0.0.4</Version>
     <Managed>1</Managed>
     <Publisher>
       <UniqueName>cicdpoc</UniqueName>
@@ -78,54 +78,8 @@
       </Addresses>
     </Publisher>
     <RootComponents>
-      <RootComponent type="1" schemaName="account" behavior="0" />
-      <RootComponent type="1" schemaName="cicd_course" behavior="0" />
-      <RootComponent type="1" schemaName="cicd_enrollment" behavior="0" />
       <RootComponent type="1" schemaName="cicd_sol1" behavior="0" />
-      <RootComponent type="1" schemaName="cicd_sol2" behavior="0" />
-      <RootComponent type="1" schemaName="cicd_student" behavior="0" />
-      <RootComponent type="1" schemaName="contact" behavior="0" />
-      <RootComponent type="1" schemaName="email" behavior="0" />
-      <RootComponent type="1" schemaName="end_businessunit" behavior="0" />
-      <RootComponent type="1" schemaName="end_invoice" behavior="0" />
-      <RootComponent type="1" schemaName="end_project" behavior="0" />
-      <RootComponent type="62" schemaName="cicd_CoreApplication" behavior="0" />
-      <RootComponent type="80" schemaName="cicd_CoreApplication" behavior="0" />
     </RootComponents>
-    <MissingDependencies>
-      <MissingDependency>
-        <Required type="1" schemaName="adx_externalidentity" displayName="External Identity" solution="PowerPages_RuntimeCore (1.0.2402.1)" />
-        <Dependent type="1" schemaName="contact" displayName="Contact" />
-      </MissingDependency>
-      <MissingDependency>
-        <Required type="1" schemaName="adx_invitation" displayName="Invitation" solution="PowerPages_RuntimeCore (1.0.2402.1)" />
-        <Dependent type="1" schemaName="account" displayName="Account" />
-      </MissingDependency>
-      <MissingDependency>
-        <Required type="1" schemaName="adx_invitation" displayName="Invitation" solution="PowerPages_RuntimeCore (1.0.2402.1)" />
-        <Dependent type="1" schemaName="contact" displayName="Contact" />
-      </MissingDependency>
-      <MissingDependency>
-        <Required type="1" schemaName="adx_webformsession" displayName="Multistep Form Session" solution="PowerPages_RuntimeCore (1.0.2402.1)" />
-        <Dependent type="1" schemaName="contact" displayName="Contact" />
-      </MissingDependency>
-      <MissingDependency>
-        <Required type="2" schemaName="acceptingentityid" displayName="Accepting Entity" parentSchemaName="email" parentDisplayName="Email" solution="msft_ActivitiesInfra_Extensions (9.2.0.73)">
-          <package appName="msdynce_Activities" version="9.0.25084.250826007">msdynce_EnableUCIByDefault (9.0.25084.250826007)</package>
-          <package appName="ActivitiesInfra Package" version="1.0.0.0">msft_ActivitiesInfra_Anchor (1.0.0.0)</package>
-        </Required>
-        <Dependent type="2" schemaName="acceptingentityid" displayName="Accepting Entity" parentSchemaName="email" parentDisplayName="Email" />
-      </MissingDependency>
-      <MissingDependency>
-        <Required type="61" schemaName="msdyn_/Images/AppModule_Default_Icon.png" displayName="msdyn_/Images/AppModule_Default_Icon.png" solution="AppModuleWebResources (2.5)" />
-        <Dependent type="80" schemaName="cicd_CoreApplication" displayName="Core Application" />
-      </MissingDependency>
-      <MissingDependency>
-        <Required type="SettingDefinition" displayName="AppChannel" solution="msdyn_AppFrameworkInfraExtensions (1.0.0.15)" id.uniquename="AppChannel">
-          <package appName="PowerAppsAppFramework Package" version="1.0.0.23">PowerAppsAppFramework_Anchor (1.0.0.23)</package>
-        </Required>
-        <Dependent type="AppSetting" displayName="parentappmoduleid.uniquename=cicd_CoreApplication,settingdefinitionid.uniquename=AppChannel" id.parentappmoduleid.uniquename="cicd_CoreApplication" id.settingdefinitionid.uniquename="AppChannel" />
-      </MissingDependency>
-    </MissingDependencies>
+    <MissingDependencies />
   </SolutionManifest>
 </ImportExportXml>
