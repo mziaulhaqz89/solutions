@@ -6,7 +6,7 @@
       <LocalizedName description="coresolution" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.2</Version>
+    <Version>1.0.0.3</Version>
     <Managed>1</Managed>
     <Publisher>
       <UniqueName>cicdpoc</UniqueName>
@@ -84,6 +84,9 @@
       <RootComponent type="1" schemaName="cicd_student" behavior="0" />
       <RootComponent type="1" schemaName="contact" behavior="0" />
       <RootComponent type="1" schemaName="email" behavior="0" />
+      <RootComponent type="1" schemaName="end_businessunit" behavior="0" />
+      <RootComponent type="1" schemaName="end_invoice" behavior="0" />
+      <RootComponent type="1" schemaName="end_project" behavior="0" />
     </RootComponents>
     <MissingDependencies>
       <MissingDependency>
@@ -100,14 +103,6 @@
       </MissingDependency>
       <MissingDependency>
         <Required type="1" schemaName="adx_webformsession" displayName="Multistep Form Session" solution="PowerPages_RuntimeCore (1.0.2402.1)" />
-        <Dependent type="1" schemaName="contact" displayName="Contact" />
-      </MissingDependency>
-      <MissingDependency>
-        <Required type="1" schemaName="end_project" displayName="Project" solution="Active" />
-        <Dependent type="1" schemaName="account" displayName="Account" />
-      </MissingDependency>
-      <MissingDependency>
-        <Required type="1" schemaName="end_project" displayName="Project" solution="Active" />
         <Dependent type="1" schemaName="contact" displayName="Contact" />
       </MissingDependency>
       <MissingDependency>
