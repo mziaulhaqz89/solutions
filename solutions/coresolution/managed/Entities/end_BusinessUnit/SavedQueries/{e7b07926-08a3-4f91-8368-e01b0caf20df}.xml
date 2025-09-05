@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>0</CanBeDeleted>
+    <isquickfindquery>1</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>1</isdefault>
+    <savedqueryid>{e7b07926-08a3-4f91-8368-e01b0caf20df}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="end_businessunitname" select="1" icon="1" preview="1">
+        <row name="result" id="end_businessunitid">
+          <cell name="end_businessunitname" width="300" />
+          <cell name="createdon" width="125" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>4</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="end_businessunit">
+          <attribute name="end_businessunitid" />
+          <attribute name="end_businessunitname" />
+          <attribute name="createdon" />
+          <order attribute="end_businessunitname" descending="false" />
+          <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0" />
+          </filter>
+          <filter type="or" isquickfindfields="1">
+            <condition attribute="end_businessunitname" operator="like" value="{0}" />
+          </filter>
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Quick Find Active Business Units" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>
