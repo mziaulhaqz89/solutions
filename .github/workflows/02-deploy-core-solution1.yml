@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  core:
+  solution1:
     uses: ./.github/workflows/shared-deployment-pipeline.yml
     with:
       solution_name: solution1    

@@ -115,8 +115,6 @@ runs:
         activate-plugins: true
         skip-dependency-check: false
         convert-to-managed: false
-        async: true
-        max-async-wait-time: 60
 
     - name: Import solution with upgrade (Upgrade Mode - Existing Solution Only)
       if: ${{ steps.solution-check.outputs.exists == 'true' && inputs.upgrade-mode == 'upgrade' }}
