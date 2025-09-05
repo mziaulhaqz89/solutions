@@ -1,0 +1,807 @@
+name: 04-Export Individual Core Component From Dev
+# Export specific core component from DEV environment for independent developer workflow
+# Allows multiple developers to work on different entities/components without conflicts
+
+run-name: 04-Export Individual Core Component From Dev - ${{ inputs.component_name }} by ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      # Specific component to export
+      component_name:
+        description: 'Name of the specific core component to export (e.g., Account, Contact, cicd_Course)'
+        required: true
+        type: string
+      # Component type
+      component_type:
+        description: 'Type of component being exported'
+        required: true
+        type: choice
+        options:
+          - entity
+          - form
+          - view
+          - workflow
+          - plugin
+          - web-resource
+          - security-role
+          - business-rule
+          - other
+      # Developer identification
+      developer_name:
+        description: 'Developer name for branch identification'
+        required: true
+        type: choice
+        options:
+          - john
+          - doe
+          - alice
+          - bob
+          - other
+      # Story/task identification
+      story_id:
+        description: 'Story/Task ID (e.g., TASK-123, STORY-456)'
+        required: false
+        type: string
+      # Component development status
+      component_status:
+        description: 'Component development status'
+        required: true
+        type: choice
+        options:
+          - ready-for-export
+          - work-in-progress
+          - testing
+          - ready-for-review
+          - hotfix
+      # Optional custom branch name
+      custom_branch_name:
+        description: 'Custom branch name (optional - leave empty for auto-generated)'
+        required: false
+        type: string
+      # Export mode
+      export_mode:
+        description: 'Export mode - selective focuses on specified component'
+        required: true
+        type: choice
+        default: selective
+        options:
+          - selective
+          - full-solution
+      #Do Not change these values
+      solution_exported_folder:
+        description: 'folder name for staging the exported solution *do not change*'
+        required: true
+        default: out/exported/
+      solution_folder:
+        description: 'staging the unpacked solution folder before check-in *do not change*'
+        required: true
+        default: out/solutions/
+      solution_target_folder:
+        description: 'folder name to be created and checked in *do not change*'
+        required: true
+        default: solutions/
+        
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pre-export-validation:
+    runs-on: ubuntu-latest
+    outputs:
+      component-exists: ${{ steps.validation.outputs.component-exists }}
+      conflicts-detected: ${{ steps.validation.outputs.conflicts-detected }}
+      branch-name: ${{ steps.branch-name.outputs.value }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate Component Export Request
+      id: validation
+      run: |
+        echo "🔍 Validating core component export request..."
+        echo "Component: ${{ github.event.inputs.component_name }}"
+        echo "Type: ${{ github.event.inputs.component_type }}"
+        echo "Developer: ${{ github.event.inputs.developer_name }}"
+        echo "Status: ${{ github.event.inputs.component_status }}"
+        echo "Export Mode: ${{ github.event.inputs.export_mode }}"
+        
+        # Check if this is a valid export request
+        if [ "${{ github.event.inputs.component_status }}" = "work-in-progress" ]; then
+          echo "⚠️ WARNING: Exporting work-in-progress component may include incomplete changes"
+          echo "Consider changing status to 'ready-for-export' when component is complete"
+        fi
+        
+        # Validate component name format
+        component_name="${{ github.event.inputs.component_name }}"
+        if [[ "$component_name" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+          echo "✅ Component name format is valid"
+        else
+          echo "⚠️ Component name may contain special characters"
+        fi
+        
+        # Set outputs
+        echo "component-exists=true" >> $GITHUB_OUTPUT
+        echo "conflicts-detected=false" >> $GITHUB_OUTPUT
+    
+    - name: Generate branch name for PR
+      id: branch-name
+      run: |
+        timestamp=$(date +"%Y%m%d-%H%M")
+        
+        if [ -n "${{ github.event.inputs.custom_branch_name }}" ]; then
+          branch_name="${{ github.event.inputs.custom_branch_name }}"
+        else
+          # Create descriptive branch name
+          component_clean=$(echo "${{ github.event.inputs.component_name }}" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+          type_clean=$(echo "${{ github.event.inputs.component_type }}" | sed 's/[^a-zA-Z0-9]/-/g')
+          story_part=""
+          if [ -n "${{ github.event.inputs.story_id }}" ]; then
+            story_part="${{ github.event.inputs.story_id }}-"
+          fi
+          branch_name="feature/${story_part}${{ github.event.inputs.developer_name }}-${type_clean}-${component_clean}-${timestamp}"
+        fi
+        
+        echo "value=$branch_name" >> $GITHUB_OUTPUT
+        echo "🌿 Branch name: $branch_name"
+
+  export-core-component:
+    needs: pre-export-validation
+    runs-on: windows-latest
+    environment: DEV
+    if: needs.pre-export-validation.outputs.component-exists == 'true'
+    env:
+      RUNNER_DEBUG: 1
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Install Power Platform CLI
+      uses: microsoft/powerplatform-actions/actions-install@v1
+
+    - name: Authenticate to Power Platform
+      uses: microsoft/powerplatform-actions/who-am-i@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+
+    - name: List Available Core Components
+      id: list-components
+      run: |
+        Write-Host "🔍 Analyzing core solution components in environment..."
+        
+        # Ensure authentication
+        $authOutput = & $env:POWERPLATFORMTOOLS_PACPATH auth list
+        if ($LASTEXITCODE -ne 0 -or $authOutput -like "*No profiles*") {
+          Write-Host "Creating auth profile..."
+          & $env:POWERPLATFORMTOOLS_PACPATH auth create --environment ${{ vars.ENVIRONMENT_URL }} --applicationId ${{ vars.CLIENT_ID }} --clientSecret ${{ secrets.PowerPlatformSPN }} --tenant ${{ vars.TENANT_ID }}
+        }
+        
+        # Get solution components
+        Write-Host "Getting core solution components..."
+        $solutionOutput = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json --environment ${{ vars.ENVIRONMENT_URL }}
+        
+        if ($LASTEXITCODE -eq 0) {
+          $solutions = $solutionOutput | ConvertFrom-Json
+          $coreSolution = $solutions | Where-Object { $_.SolutionUniqueName -eq "coresolution" }
+          
+          if ($coreSolution) {
+            Write-Host "✅ Core solution found: $($coreSolution.FriendlyName)"
+            Write-Host "Version: $($coreSolution.VersionNumber)"
+            echo "solution-found=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "❌ Core solution 'coresolution' not found in environment"
+            echo "solution-found=false" >> $env:GITHUB_OUTPUT
+          }
+        } else {
+          Write-Host "⚠️ Could not retrieve solution list, proceeding with export attempt..."
+          echo "solution-found=unknown" >> $env:GITHUB_OUTPUT
+        }
+        
+        # List entities if component type is entity
+        if ("${{ github.event.inputs.component_type }}" -eq "entity") {
+          Write-Host ""
+          Write-Host "🗂️ Listing available entities..."
+          $entityOutput = & $env:POWERPLATFORMTOOLS_PACPATH entity list --environment ${{ vars.ENVIRONMENT_URL }}
+          
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Available entities:"
+            Write-Host $entityOutput
+            
+            # Check if requested entity exists
+            $componentName = "${{ github.event.inputs.component_name }}"
+            if ($entityOutput -like "*$componentName*") {
+              Write-Host "✅ Entity '$componentName' found in environment"
+              echo "component-found=true" >> $env:GITHUB_OUTPUT
+            } else {
+              Write-Host "⚠️ Entity '$componentName' not found in environment"
+              echo "component-found=false" >> $env:GITHUB_OUTPUT
+            }
+          } else {
+            Write-Host "⚠️ Could not retrieve entity list"
+            echo "component-found=unknown" >> $env:GITHUB_OUTPUT
+          }
+        } else {
+          Write-Host "ℹ️ Component type '${{ github.event.inputs.component_type }}' - skipping entity-specific validation"
+          echo "component-found=true" >> $env:GITHUB_OUTPUT
+        }
+
+    - name: Get Current Solution Version and Increment
+      id: version
+      run: |
+        Write-Host "🔢 Getting and incrementing core solution version..."
+        
+        # Get current solution list in JSON format
+        $output = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json --environment ${{ vars.ENVIRONMENT_URL }}
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "PAC command failed with exit code: $LASTEXITCODE"
+          exit 1
+        }
+        
+        # Parse JSON and find the core solution
+        $solutions = $output | ConvertFrom-Json
+        $currentSolution = $solutions | Where-Object { $_.SolutionUniqueName -eq "coresolution" }
+        
+        if (-not $currentSolution) {
+          Write-Host "❌ Core solution not found in environment"
+          exit 1
+        }
+        
+        # Get current version and increment
+        $currentVersion = $currentSolution.VersionNumber
+        Write-Host "Current core solution version: $currentVersion"
+        
+        $versionParts = $currentVersion.Split('.')
+        $major = [int]$versionParts[0]
+        $minor = [int]$versionParts[1] 
+        $build = [int]$versionParts[2]
+        $revision = [int]$versionParts[3]
+        
+        # Increment revision number
+        $revision++
+        $newVersion = "$major.$minor.$build.$revision"
+        
+        echo "number=$newVersion" >> $env:GITHUB_OUTPUT
+        Write-Host "New version will be: $newVersion"
+
+    - name: Set Online Solution Version
+      uses: microsoft/powerplatform-actions/set-online-solution-version@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        name: coresolution
+        version: ${{ steps.version.outputs.number }}
+
+    - name: Export Core Solution (Unmanaged)
+      uses: microsoft/powerplatform-actions/export-solution@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-name: coresolution
+        solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_unmanaged.zip
+        
+    - name: Export Core Solution (Managed)
+      uses: microsoft/powerplatform-actions/export-solution@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-name: coresolution
+        managed: true
+        solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_managed.zip
+
+    - name: Unpack Solution (Unmanaged)
+      uses: microsoft/powerplatform-actions/unpack-solution@v1
+      with:
+        solution-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_unmanaged.zip
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/coresolution/unmanaged
+        solution-type: 'Unmanaged'
+        overwrite-files: true
+
+    - name: Unpack Solution (Managed)
+      uses: microsoft/powerplatform-actions/unpack-solution@v1
+      with:
+        solution-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_managed.zip
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/coresolution/managed
+        solution-type: 'Managed'
+        overwrite-files: true
+
+    - name: Filter Core Component Content (Selective Mode)
+      id: filter-components
+      if: github.event.inputs.export_mode == 'selective'
+      run: |
+        Write-Host "🎯 Selective mode: Analyzing for specific component..."
+        Write-Host "Target component: ${{ github.event.inputs.component_name }}"
+        Write-Host "Component type: ${{ github.event.inputs.component_type }}"
+        
+        $componentType = "${{ github.event.inputs.component_type }}"
+        $componentName = "${{ github.event.inputs.component_name }}"
+        $basePath = "${{ github.event.inputs.solution_target_folder}}/coresolution/unmanaged"
+        
+        # Initialize counters
+        $targetFilesFound = 0
+        $totalFilesFound = 0
+        $analysisResult = @()
+        
+        # Analyze based on component type
+        switch ($componentType) {
+          "entity" {
+            $entitiesPath = "$basePath/Entities"
+            if (Test-Path $entitiesPath) {
+              Write-Host "📁 Found entities directory: $entitiesPath"
+              $allEntityDirs = Get-ChildItem $entitiesPath -Directory
+              $totalFilesFound = $allEntityDirs.Count
+              
+              Write-Host "Total entity directories found: $totalFilesFound"
+              foreach ($dir in $allEntityDirs) {
+                Write-Host "  - $($dir.Name)"
+              }
+              
+              # Find directories matching the entity name
+              $targetDirs = $allEntityDirs | Where-Object { $_.Name -like "*$componentName*" -or $_.Name -eq $componentName }
+              $targetFilesFound = $targetDirs.Count
+              
+              if ($targetFilesFound -eq 0) {
+                Write-Host "⚠️ No entity directories found matching '$componentName'"
+                Write-Host "Available entities:"
+                $allEntityDirs | ForEach-Object { Write-Host "  - $($_.Name)" }
+                $analysisResult += "❌ Entity '$componentName' not found in solution"
+              } else {
+                Write-Host "✅ Found $targetFilesFound entity directories for '$componentName':"
+                foreach ($dir in $targetDirs) {
+                  Write-Host "  ✓ $($dir.Name)"
+                  $analysisResult += "🎯 Target Entity: $($dir.Name)"
+                  
+                  # Analyze entity contents
+                  $entityFiles = Get-ChildItem $dir.FullName -Recurse -File
+                  Write-Host "    Files in entity: $($entityFiles.Count)"
+                  $entityFiles | ForEach-Object { Write-Host "      - $($_.Name)" }
+                }
+              }
+            } else {
+              Write-Host "❌ Entities directory not found: $entitiesPath"
+              $analysisResult += "❌ Entities directory not found"
+            }
+          }
+          
+          "form" {
+            Write-Host "🖼️ Analyzing forms within entities..."
+            $entitiesPath = "$basePath/Entities"
+            if (Test-Path $entitiesPath) {
+              $entityDirs = Get-ChildItem $entitiesPath -Directory
+              $formsFound = 0
+              
+              foreach ($entityDir in $entityDirs) {
+                $formsPath = Join-Path $entityDir.FullName "Forms"
+                if (Test-Path $formsPath) {
+                  $formFiles = Get-ChildItem $formsPath -File -Filter "*.xml"
+                  foreach ($formFile in $formFiles) {
+                    $totalFilesFound++
+                    if ($formFile.Name -like "*$componentName*") {
+                      $targetFilesFound++
+                      $formsFound++
+                      Write-Host "  ✓ Found form: $($formFile.Name) in entity $($entityDir.Name)"
+                      $analysisResult += "🎯 Target Form: $($formFile.Name) in $($entityDir.Name)"
+                    }
+                  }
+                }
+              }
+              
+              if ($formsFound -eq 0) {
+                $analysisResult += "⚠️ No forms found matching '$componentName'"
+              }
+            }
+          }
+          
+          "view" {
+            Write-Host "👁️ Analyzing views within entities..."
+            $entitiesPath = "$basePath/Entities"
+            if (Test-Path $entitiesPath) {
+              $entityDirs = Get-ChildItem $entitiesPath -Directory
+              $viewsFound = 0
+              
+              foreach ($entityDir in $entityDirs) {
+                $viewsPath = Join-Path $entityDir.FullName "SavedQueries"
+                if (Test-Path $viewsPath) {
+                  $viewFiles = Get-ChildItem $viewsPath -File -Filter "*.xml"
+                  foreach ($viewFile in $viewFiles) {
+                    $totalFilesFound++
+                    if ($viewFile.Name -like "*$componentName*") {
+                      $targetFilesFound++
+                      $viewsFound++
+                      Write-Host "  ✓ Found view: $($viewFile.Name) in entity $($entityDir.Name)"
+                      $analysisResult += "🎯 Target View: $($viewFile.Name) in $($entityDir.Name)"
+                    }
+                  }
+                }
+              }
+              
+              if ($viewsFound -eq 0) {
+                $analysisResult += "⚠️ No views found matching '$componentName'"
+              }
+            }
+          }
+          
+          "workflow" {
+            Write-Host "⚙️ Analyzing workflows..."
+            $workflowsPath = "$basePath/Workflows"
+            if (Test-Path $workflowsPath) {
+              $workflowFiles = Get-ChildItem $workflowsPath -File
+              $totalFilesFound = $workflowFiles.Count
+              
+              $targetFiles = $workflowFiles | Where-Object { $_.Name -like "*$componentName*" }
+              $targetFilesFound = $targetFiles.Count
+              
+              if ($targetFilesFound -gt 0) {
+                foreach ($file in $targetFiles) {
+                  Write-Host "  ✓ Found workflow: $($file.Name)"
+                  $analysisResult += "🎯 Target Workflow: $($file.Name)"
+                }
+              } else {
+                $analysisResult += "⚠️ No workflows found matching '$componentName'"
+              }
+            }
+          }
+          
+          default {
+            Write-Host "🔍 General component analysis for type: $componentType"
+            # General search across solution structure
+            $allFiles = Get-ChildItem $basePath -Recurse -File | Where-Object { $_.Name -like "*$componentName*" }
+            $targetFilesFound = $allFiles.Count
+            $totalFilesFound = (Get-ChildItem $basePath -Recurse -File).Count
+            
+            if ($targetFilesFound -gt 0) {
+              foreach ($file in $allFiles) {
+                Write-Host "  ✓ Found component file: $($file.Name) in $($file.Directory.Name)"
+                $analysisResult += "🎯 Target Component: $($file.Name)"
+              }
+            } else {
+              $analysisResult += "⚠️ No files found matching component '$componentName'"
+            }
+          }
+        }
+        
+        # Set outputs
+        echo "component-files-found=$(if ($targetFilesFound -gt 0) { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
+        echo "target-files=$targetFilesFound" >> $env:GITHUB_OUTPUT
+        echo "total-files=$totalFilesFound" >> $env:GITHUB_OUTPUT
+        
+        Write-Host ""
+        Write-Host "📋 SELECTIVE EXPORT SUMMARY:"
+        Write-Host "Component Type: $componentType"
+        Write-Host "Target Component: $componentName"
+        Write-Host "Target Files Found: $targetFilesFound"
+        Write-Host "Total Files in Solution: $totalFilesFound"
+        Write-Host ""
+        Write-Host "Analysis Results:"
+        $analysisResult | ForEach-Object { Write-Host "  $_" }
+
+    - name: Analyze Component Dependencies
+      id: analyze-dependencies
+      run: |
+        Write-Host "🔍 Analyzing component dependencies and relationships..."
+        
+        $solutionXmlPath = "${{ github.event.inputs.solution_target_folder}}/coresolution/unmanaged/Other/Solution.xml"
+        $relationshipsXmlPath = "${{ github.event.inputs.solution_target_folder}}/coresolution/unmanaged/Other/Relationships.xml"
+        
+        $dependencyInfo = @{
+          componentName = "${{ github.event.inputs.component_name }}"
+          componentType = "${{ github.event.inputs.component_type }}"
+          developer = "${{ github.event.inputs.developer_name }}"
+          exportedAt = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss UTC")
+          dependencies = @()
+          relationships = @()
+          warnings = @()
+        }
+        
+        # Analyze solution dependencies
+        if (Test-Path $solutionXmlPath) {
+          Write-Host "📄 Reading solution dependencies from: $solutionXmlPath"
+          [xml]$solutionXml = Get-Content $solutionXmlPath
+          
+          $dependencies = $solutionXml.ImportExportXml.SolutionManifest.Dependencies.Dependency
+          if ($dependencies) {
+            Write-Host "📋 Solution Dependencies Found:"
+            if ($dependencies.Count) {
+              foreach ($dep in $dependencies) {
+                Write-Host "  ✅ $($dep.solution) (v$($dep.version))"
+                $dependencyInfo.dependencies += @{
+                  solution = $dep.solution
+                  version = $dep.version
+                }
+              }
+            } else {
+              Write-Host "  ✅ $($dependencies.solution) (v$($dependencies.version))"
+              $dependencyInfo.dependencies += @{
+                solution = $dependencies.solution
+                version = $dependencies.version
+              }
+            }
+          } else {
+            Write-Host "  ℹ️ No explicit dependencies found"
+          }
+        }
+        
+        # Analyze relationships if dealing with entities
+        if ("${{ github.event.inputs.component_type }}" -eq "entity" -and (Test-Path $relationshipsXmlPath)) {
+          Write-Host "🔗 Analyzing entity relationships..."
+          [xml]$relationshipsXml = Get-Content $relationshipsXmlPath
+          
+          $componentName = "${{ github.event.inputs.component_name }}"
+          $relationships = $relationshipsXml.ImportExportXml.EntityRelationships.EntityRelationship
+          
+          if ($relationships) {
+            $relatedToComponent = $relationships | Where-Object { 
+              $_.Name -like "*$componentName*" -or 
+              $_.ReferencingEntity -eq $componentName -or 
+              $_.ReferencedEntity -eq $componentName 
+            }
+            
+            if ($relatedToComponent) {
+              Write-Host "🔗 Relationships involving '$componentName':"
+              foreach ($rel in $relatedToComponent) {
+                $relInfo = "$($rel.ReferencingEntity) → $($rel.ReferencedEntity) ($($rel.Name))"
+                Write-Host "  🔗 $relInfo"
+                $dependencyInfo.relationships += $relInfo
+              }
+            } else {
+              Write-Host "  ℹ️ No direct relationships found for '$componentName'"
+            }
+          }
+        }
+        
+        # Add component-specific warnings
+        if ("${{ steps.filter-components.outputs.component-files-found }}" -eq "false") {
+          $dependencyInfo.warnings += "Component '${{ github.event.inputs.component_name }}' not found in solution"
+        }
+        
+        if ("${{ github.event.inputs.component_status }}" -eq "work-in-progress") {
+          $dependencyInfo.warnings += "Component marked as work-in-progress - review changes carefully"
+        }
+        
+        # Save dependency analysis
+        $dependencyJson = $dependencyInfo | ConvertTo-Json -Depth 3
+        $dependencyPath = "${{ github.event.inputs.solution_exported_folder}}/component-dependencies-${{ github.event.inputs.component_name }}.json"
+        New-Item -Path (Split-Path $dependencyPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
+        $dependencyJson | Out-File -FilePath $dependencyPath -Encoding UTF8
+        
+        Write-Host "💾 Dependency analysis saved to: $dependencyPath"
+
+    - name: Generate Component Analysis Report
+      id: generate-report
+      run: |
+        Write-Host "📄 Generating comprehensive component analysis report..."
+        
+        $reportPath = "${{ github.event.inputs.solution_exported_folder}}/core-component-analysis-report.md"
+        
+        # Build report content
+        $reportContent = @()
+        $reportContent += "# Core Component Export Analysis Report"
+        $reportContent += ""
+        $reportContent += "## Export Details"
+        $reportContent += "- **Component Name**: ${{ github.event.inputs.component_name }}"
+        $reportContent += "- **Component Type**: ${{ github.event.inputs.component_type }}"
+        $reportContent += "- **Developer**: ${{ github.event.inputs.developer_name }}"
+        $reportContent += "- **Export Mode**: ${{ github.event.inputs.export_mode }}"
+        $reportContent += "- **Status**: ${{ github.event.inputs.component_status }}"
+        $reportContent += "- **Timestamp**: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
+        $reportContent += "- **Branch**: ${{ needs.pre-export-validation.outputs.branch-name }}"
+        $reportContent += ""
+        $reportContent += "## Solution Analysis"
+        $reportContent += "- **Solution**: coresolution"
+        $reportContent += "- **New Version**: ${{ steps.version.outputs.number }}"
+        $reportContent += "- **Target Files Found**: ${{ steps.filter-components.outputs.target-files }}"
+        $reportContent += "- **Total Files in Solution**: ${{ steps.filter-components.outputs.total-files }}"
+        $reportContent += ""
+        $reportContent += "## Export Mode: ${{ github.event.inputs.export_mode }}"
+        $reportContent += ""
+        $reportContent += "### Selective Mode Benefits:"
+        $reportContent += "✅ Focuses on specific component development"
+        $reportContent += "✅ Reduces merge conflicts between developers"
+        $reportContent += "✅ Clearer change tracking and review"
+        $reportContent += "✅ Independent developer workflow"
+        $reportContent += "✅ Maintains solution integrity"
+        $reportContent += ""
+        
+        if ("${{ steps.filter-components.outputs.component-files-found }}" -eq "true") {
+          $reportContent += "## ✅ Component Found and Exported"
+          $reportContent += ""
+          $reportContent += "### 🎯 Primary Component (Your Changes):"
+          $reportContent += "- **Name**: ${{ github.event.inputs.component_name }}"
+          $reportContent += "- **Type**: ${{ github.event.inputs.component_type }}"
+          $reportContent += "- **Files**: ${{ steps.filter-components.outputs.target-files }} files found"
+          $reportContent += ""
+          $reportContent += "### 📄 Supporting Content:"
+          $reportContent += "- Other core solution components (for solution integrity)"
+          $reportContent += "- Solution metadata and dependencies"
+          $reportContent += "- Related customizations"
+          $reportContent += ""
+          $reportContent += "### ✅ Next Steps:"
+          $reportContent += "1. **Review PR Changes**: Focus on your component-specific changes"
+          $reportContent += "2. **Verify Dependencies**: Ensure related components are not broken"
+          $reportContent += "3. **Test Functionality**: Test your component in DEV environment"
+          $reportContent += "4. **Coordinate with Team**: Check for conflicts with other developers"
+          $reportContent += "5. **Deploy When Ready**: Merge to trigger deployment pipeline"
+        } else {
+          $reportContent += "## ❌ Component Not Found"
+          $reportContent += ""
+          $reportContent += "### Issue Details:"
+          $reportContent += "- Component '${{ github.event.inputs.component_name }}' not found in core solution"
+          $reportContent += "- Type: ${{ github.event.inputs.component_type }}"
+          $reportContent += ""
+          $reportContent += "### 🔧 Troubleshooting Steps:"
+          $reportContent += "1. **Verify Component Name**: Check spelling and exact name in DEV environment"
+          $reportContent += "2. **Check Component Type**: Ensure the type matches the actual component"
+          $reportContent += "3. **Verify Solution**: Ensure component is in 'coresolution' not another solution"
+          $reportContent += "4. **Check Permissions**: Verify you have access to the component"
+          $reportContent += "5. **Recent Changes**: Check if component was recently added/renamed"
+        }
+        
+        $reportContent += ""
+        $reportContent += "## Team Coordination"
+        $reportContent += ""
+        $reportContent += "### Development Info:"
+        $reportContent += "- **Story/Task**: ${{ github.event.inputs.story_id }}"
+        $reportContent += "- **Developer**: ${{ github.event.inputs.developer_name }}"
+        $reportContent += "- **Status**: ${{ github.event.inputs.component_status }}"
+        $reportContent += ""
+        $reportContent += "### 👥 Team Guidelines:"
+        $reportContent += "- ⚠️ **Coordinate**: If other developers are working on core solution components"
+        $reportContent += "- 🔍 **Review**: Check PR for unexpected changes to other components"
+        $reportContent += "- 🧪 **Test**: Verify your changes don't break existing functionality"
+        $reportContent += "- 📞 **Communicate**: Update team on major core solution changes"
+        $reportContent += ""
+        $reportContent += "## Component Type Guidelines"
+        $reportContent += ""
+        
+        switch ("${{ github.event.inputs.component_type }}") {
+          "entity" {
+            $reportContent += "### 🗂️ Entity Development:"
+            $reportContent += "- Review all entity customizations (fields, forms, views, relationships)"
+            $reportContent += "- Test data integrity and validation rules"
+            $reportContent += "- Verify security roles and permissions"
+            $reportContent += "- Check integration points and dependencies"
+          }
+          "form" {
+            $reportContent += "### 🖼️ Form Development:"
+            $reportContent += "- Test form functionality and UI/UX"
+            $reportContent += "- Verify field visibility and business rules"
+            $reportContent += "- Check form scripting and client-side logic"
+            $reportContent += "- Test across different devices and browsers"
+          }
+          "view" {
+            $reportContent += "### 👁️ View Development:"
+            $reportContent += "- Test view filtering and sorting"
+            $reportContent += "- Verify column configuration and formatting"
+            $reportContent += "- Check view permissions and security"
+            $reportContent += "- Test performance with large datasets"
+          }
+          "workflow" {
+            $reportContent += "### ⚙️ Workflow Development:"
+            $reportContent += "- Test workflow logic and conditions"
+            $reportContent += "- Verify triggers and execution timing"
+            $reportContent += "- Check error handling and logging"
+            $reportContent += "- Test with different user permissions"
+          }
+          default {
+            $reportContent += "### 🔧 General Component Development:"
+            $reportContent += "- Test component functionality thoroughly"
+            $reportContent += "- Verify integration with other solution components"
+            $reportContent += "- Check permissions and security settings"
+            $reportContent += "- Document any breaking changes"
+          }
+        }
+        
+        $reportContent += ""
+        $reportContent += "---"
+        $reportContent += "*Generated by Core Component Export Workflow*"
+        $reportContent += ""
+        $reportContent += "**Workflow Run**: [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+        
+        # Write report to file
+        New-Item -Path (Split-Path $reportPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
+        $reportContent | Out-File -FilePath $reportPath -Encoding UTF8
+        
+        Write-Host "📄 Comprehensive analysis report created: $reportPath"
+
+    - name: Run Solution Checker
+      uses: microsoft/powerplatform-actions/check-solution@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        path: ${{ github.event.inputs.solution_exported_folder}}/coresolution_managed.zip
+
+    - name: Upload Export Artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: core-component-export-${{ github.event.inputs.developer_name }}-${{ github.event.inputs.component_name }}-${{ github.run_number }}
+        path: |
+          ${{ github.event.inputs.solution_exported_folder}}/**/*
+          ${{ runner.temp }}/PowerAppsChecker/**/*
+        retention-days: 30
+
+    - name: Create Pull Request
+      uses: microsoft/powerplatform-actions/branch-solution@v1
+      with:
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/coresolution
+        solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/coresolution
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        allow-empty-commit: true
+        branch-name: ${{ needs.pre-export-validation.outputs.branch-name }}
+        clobber-branch: true
+
+    - name: Export Summary
+      if: success()
+      run: |
+        Write-Host "🎉 Core component export completed successfully!"
+        Write-Host ""
+        Write-Host "📋 EXPORT SUMMARY:"
+        Write-Host "Developer: ${{ github.event.inputs.developer_name }}"
+        Write-Host "Component: ${{ github.event.inputs.component_name }} (${{ github.event.inputs.component_type }})"
+        Write-Host "Branch: ${{ needs.pre-export-validation.outputs.branch-name }}"
+        Write-Host "Mode: ${{ github.event.inputs.export_mode }}"
+        Write-Host "Status: ${{ github.event.inputs.component_status }}"
+        Write-Host ""
+        Write-Host "🔍 Review your PR carefully before merging!"
+        Write-Host "📥 Check artifacts for detailed analysis reports"
+        Write-Host "🧪 Test your component changes in DEV environment"
+
+  post-export-notification:
+    needs: [pre-export-validation, export-core-component]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Export Status Summary
+      run: |
+        echo "🚀 Individual Core Component Export Workflow Complete"
+        echo ""
+        echo "📊 SUMMARY:"
+        echo "Developer: ${{ github.event.inputs.developer_name }}"
+        echo "Component: ${{ github.event.inputs.component_name }}"
+        echo "Type: ${{ github.event.inputs.component_type }}"
+        echo "Status: ${{ github.event.inputs.component_status }}"
+        echo "Branch: ${{ needs.pre-export-validation.outputs.branch-name }}"
+        echo "Export Job: ${{ needs.export-core-component.result }}"
+        echo ""
+        
+        if [ "${{ needs.export-core-component.result }}" = "success" ]; then
+          echo "✅ SUCCESS: Core component exported and PR created"
+          echo ""
+          echo "📋 NEXT STEPS:"
+          echo "1. Review the created PR for your component changes"
+          echo "2. Verify no unintended changes to other core components"
+          echo "3. Test component functionality in development environment"
+          echo "4. Check component dependencies and relationships"
+          echo "5. Get team review if needed (especially for entities)"
+          echo "6. Merge when ready to trigger deployment"
+        else
+          echo "❌ FAILED: Core component export encountered issues"
+          echo ""
+          echo "🔧 TROUBLESHOOTING:"
+          echo "1. Check workflow logs for specific errors"
+          echo "2. Verify component exists in DEV environment"
+          echo "3. Ensure component name and type are correct"
+          echo "4. Verify proper authentication and permissions"
+          echo "5. Contact team for assistance if needed"
+        fi
+        
+        echo ""
+        echo "👥 TEAM COORDINATION:"
+        echo "- Other developers can continue working on different core components"
+        echo "- Use feature branches for parallel core solution development"
+        echo "- Coordinate especially for entity changes (impacts relationships)"
+        echo "- Test integration points between components"
+        echo "- Document breaking changes clearly in PR"

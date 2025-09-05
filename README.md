@@ -49,14 +49,14 @@ PRODUCTION = Production environment with approval gates
 
 ### 3. Solving Team Development Challenges ⭐ **NEW**
 
-**Problem**: Multiple developers working on different flows in the same solution
+**Problem 1**: Multiple developers working on different flows in the same solution
 - John completed Flow 1, wants to deploy
 - Doe still working on Flow 2, not ready
 - Risk of conflicts and blocking each other
 
 **Solution**: Use the new **Individual Flow Export** workflow!
 
-**Quick Start for John & Doe:**
+**Quick Start for John & Doe (Flows):**
 ```yaml
 # John's Export (Ready to deploy)
 Workflow: "03-Export Individual Flow From Dev"
@@ -73,13 +73,53 @@ Status: ready-for-export
 Mode: selective
 ```
 
+**Problem 2**: Multiple developers working on different core components
+- John working on Account entity customizations
+- Doe working on Contact entity relationships  
+- Alice customizing Student forms
+- Bob developing Course workflows
+
+**Solution**: Use the new **Individual Core Component Export** workflow!
+
+**Quick Start for Team (Core Components):**
+```yaml
+# John's Export (Entity work)
+Workflow: "04-Export Individual Core Component From Dev"
+Component name: Account
+Component type: entity
+Developer: john
+Status: ready-for-export
+
+# Doe's Export (Entity relationships)
+Component name: Contact  
+Component type: entity
+Developer: doe
+Status: testing
+
+# Alice's Export (Form customizations)
+Component name: StudentRegistrationForm
+Component type: form
+Developer: alice
+Status: ready-for-export
+
+# Bob's Export (Workflow development)
+Component name: CourseApprovalWorkflow
+Component type: workflow
+Developer: bob
+Status: ready-for-review
+```
+
 **Benefits:**
 ✅ **Independent Development** - No blocking between developers  
 ✅ **Conflict Prevention** - Selective exports reduce merge conflicts  
-✅ **Clear Tracking** - Know who's working on what flow  
+✅ **Clear Tracking** - Know who's working on what (flows/components)  
 ✅ **Parallel Timelines** - Deploy when ready, not when everyone is ready  
+✅ **Component-Specific Analysis** - Detailed dependency and relationship tracking  
+✅ **Team Scalability** - Works with any number of developers on different components  
 
-📖 **[Complete Guide: INDIVIDUAL_FLOW_EXPORT_GUIDE.md](./INDIVIDUAL_FLOW_EXPORT_GUIDE.md)**
+📖 **[📋 Complete Solution: COMPLETE_TEAM_DEVELOPMENT_SOLUTION.md](./COMPLETE_TEAM_DEVELOPMENT_SOLUTION.md)**  
+📖 **[🔄 Flow Guide: INDIVIDUAL_FLOW_EXPORT_GUIDE.md](./INDIVIDUAL_FLOW_EXPORT_GUIDE.md)**  
+📖 **[🗂️ Core Guide: INDIVIDUAL_CORE_COMPONENT_EXPORT_GUIDE.md](./INDIVIDUAL_CORE_COMPONENT_EXPORT_GUIDE.md)**
 
 ### 4. Current Setup Status
 
@@ -91,6 +131,7 @@ Mode: selective
 - Quality gates during deployment stages
 - Solution artifacts with retention
 - **Individual flow export for team coordination** ⭐
+- **Individual core component export for team coordination** ⭐
 
 **⚠️ Optional Enhancements Available:**
 - GitHub environment approval gates (configured but can be customized)
@@ -105,6 +146,13 @@ Mode: selective
 2. Select your flow name and developer name
 3. Choose export mode: `selective` (recommended)
 4. Creates PR with flow-specific analysis
+5. Merge independently when ready! 🎉
+
+**For Team Core Component Development (Extended John & Doe Strategy):**
+1. Actions → **"04-Export Individual Core Component From Dev"** → Run workflow
+2. Select your component name, type, and developer name
+3. Choose export mode: `selective` (recommended)
+4. Creates PR with component-specific analysis and dependency tracking
 5. Merge independently when ready! 🎉
 
 **For General Solution Export:**
@@ -177,11 +225,40 @@ Flow status: ready-for-export
 Export mode: selective
 ```
 
-### 4. 🚢 Deploy Core Solution  
+### 4. 🎯 Export Individual Core Component From Dev ⭐ **NEW**
+**File**: `04-export-individual-core-component.yml`  
+**Purpose**: **Extend John & Doe strategy to Core solution** - Independent component development
+
+**Key Benefits**:
+- ✅ **Component-Specific Exports**: Focus on entities, forms, views, workflows individually
+- ✅ **Multi-Developer Core Solution**: Multiple developers on different core components
+- ✅ **Dependency Analysis**: Automatic analysis of component relationships  
+- ✅ **Component Type Support**: Entities, forms, views, workflows, web resources, etc.
+- ✅ **Relationship Tracking**: Entity relationship impact analysis
+
+**Perfect for**:
+- John working on Account entity, Doe working on Contact entity
+- Alice customizing forms, Bob developing workflows
+- Independent core component development timelines
+- Component-specific testing and validation
+
+**Usage**:
+```yaml
+Component name: Account
+Component type: entity
+Developer name: john
+Story ID: ENTITY-001
+Component status: ready-for-export
+Export mode: selective
+```
+
+📖 **[Complete Guide: INDIVIDUAL_CORE_COMPONENT_EXPORT_GUIDE.md](./INDIVIDUAL_CORE_COMPONENT_EXPORT_GUIDE.md)**
+
+### 5. 🚢 Deploy Core Solution  
 **File**: `02-deploy-core-solution.yml`  
 **Purpose**: Deploy core solution through all environments
 
-### 5. 🚢 Deploy Flows Solution
+### 6. 🚢 Deploy Flows Solution
 **File**: `03-deploy-flows-solution.yml`  
 **Purpose**: Deploy flows solution through all environments
 
@@ -189,7 +266,7 @@ Export mode: selective
 - **Push to `main`** when `solutions/flows/**` changes (automatic)
 - Manual workflow dispatch
 
-### 6. 🏗️ Shared Deployment Pipeline
+### 7. 🏗️ Shared Deployment Pipeline
 **File**: `shared-deployment-pipeline.yml`  
 **Purpose**: Reusable deployment workflow with quality gates
 
