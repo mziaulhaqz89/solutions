@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<savedqueries xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <savedquery>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>0</CanBeDeleted>
+    <isquickfindquery>0</isquickfindquery>
+    <isprivate>0</isprivate>
+    <isdefault>1</isdefault>
+    <savedqueryid>{264ba39c-5540-4404-846b-b574bdf70726}</savedqueryid>
+    <layoutxml>
+      <grid name="resultset" jump="cicd_enrollment1" select="1" icon="1" preview="1">
+        <row name="result" id="cicd_enrollmentid">
+          <cell name="cicd_enrollment1" width="300" />
+          <cell name="cicd_studentid" width="150" />
+          <cell name="cicd_courseid" width="150" />
+          <cell name="cicd_enrollmentdate" width="150" />
+        </row>
+      </grid>
+    </layoutxml>
+    <querytype>0</querytype>
+    <fetchxml>
+      <fetch version="1.0" mapping="logical">
+        <entity name="cicd_enrollment">
+          <attribute name="cicd_enrollmentid" />
+          <attribute name="cicd_enrollment1" />
+          <attribute name="createdon" />
+          <order attribute="cicd_enrollment1" descending="false" />
+          <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0" />
+          </filter>
+          <attribute name="cicd_studentid" />
+          <attribute name="cicd_courseid" />
+          <attribute name="cicd_enrollmentdate" />
+        </entity>
+      </fetch>
+    </fetchxml>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <LocalizedNames>
+      <LocalizedName description="Active Enrollments" languagecode="1033" />
+    </LocalizedNames>
+  </savedquery>
+</savedqueries>
