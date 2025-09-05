@@ -205,49 +205,66 @@ jobs:
         # List entities if component type is entity
         if ("${{ github.event.inputs.component_type }}" -eq "entity") {
           Write-Host ""
-          Write-Host "🗂️ Listing available entities..."
+          Write-Host "🗂️ Validating entity availability..."
           
-          # Try multiple approaches to list entities
           $entityFound = $false
           $componentName = "${{ github.event.inputs.component_name }}"
           
-          # Approach 1: Try pac data list-tables (correct command)
-          Write-Host "Attempting pac data list-tables..."
+          Write-Host "Creating FetchXML query to check entity existence..."
+          
+          # Create FetchXML file to query for the specific entity
+          $xmlContent = '<?xml version="1.0" encoding="utf-8"?>' + "`n"
+          $xmlContent += '<fetch version="1.0" output-format="xml-platform" mapping="logical" distinct="false" count="1">' + "`n"
+          $xmlContent += '  <entity name="entity">' + "`n"
+          $xmlContent += '    <attribute name="logicalname" />' + "`n"
+          $xmlContent += '    <attribute name="displayname" />' + "`n"
+          $xmlContent += '    <filter type="and">' + "`n"
+          $xmlContent += '      <condition attribute="logicalname" operator="eq" value="' + $componentName + '" />' + "`n"
+          $xmlContent += '    </filter>' + "`n"
+          $xmlContent += '  </entity>' + "`n"
+          $xmlContent += '</fetch>'
+          
+          # Save FetchXML to temporary file
+          $xmlContent | Out-File -FilePath "entity_check.xml" -Encoding UTF8
+          
+          Write-Host "Executing FetchXML query to validate entity '$componentName'..."
           try {
-            $entityOutput = & $env:POWERPLATFORMTOOLS_PACPATH data list-tables --environment ${{ vars.ENVIRONMENT_URL }} 2>&1
-            Write-Host "Data list-tables command exit code: $LASTEXITCODE"
+            $queryResult = & $env:POWERPLATFORMTOOLS_PACPATH env fetch --query-file "entity_check.xml" --environment ${{ vars.ENVIRONMENT_URL }} 2>&1
+            Write-Host "FetchXML query exit code: $LASTEXITCODE"
             
-            if ($LASTEXITCODE -eq 0 -and $entityOutput) {
-              Write-Host "✅ Successfully retrieved table list via pac data list-tables"
-              Write-Host "Available tables/entities:"
-              Write-Host $entityOutput
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "✅ FetchXML query executed successfully"
               
-              if ($entityOutput -like "*$componentName*") {
+              # Check if the result contains our entity
+              if ($queryResult -and ($queryResult.ToString() -like "*$componentName*")) {
                 Write-Host "✅ Entity '$componentName' found in environment"
                 $entityFound = $true
+              } else {
+                Write-Host "⚠️ Entity '$componentName' not found in query results"
+                Write-Host "Query result: $queryResult"
               }
             } else {
-              Write-Host "⚠️ pac data list-tables failed or returned no output. Exit code: $LASTEXITCODE"
-              if ($entityOutput) {
-                Write-Host "Error output: $entityOutput"
+              Write-Host "⚠️ FetchXML query failed. Exit code: $LASTEXITCODE"
+              if ($queryResult) {
+                Write-Host "Error output: $queryResult"
               }
             }
           } catch {
-            Write-Host "⚠️ Exception running pac data list-tables: $_.Exception.Message"
+            Write-Host "⚠️ Exception running FetchXML query: $_.Exception.Message"
           }
           
-          # Approach 2: Try solution list with detailed info if table list fails
+          # Clean up temporary file
+          if (Test-Path "entity_check.xml") {
+            Remove-Item "entity_check.xml" -Force
+          }
+          
+          # If FetchXML validation fails, proceed anyway - export will validate
           if (-not $entityFound) {
             Write-Host ""
-            Write-Host "Trying alternative approach with solution info..."
-            try {
-              # Since solution component list doesn't exist, we'll use export to validate
-              Write-Host "✅ Will validate entity during export process"
-              Write-Host "ℹ️ If entity '$componentName' doesn't exist, solution export will fail with clear message"
-              $entityFound = $true  # Allow export to proceed - it will validate entity existence
-            } catch {
-              Write-Host "⚠️ Exception in alternative validation: $_.Exception.Message"
-            }
+            Write-Host "⚠️ Could not validate entity existence via FetchXML"
+            Write-Host "ℹ️ Proceeding with export - if entity '$componentName' doesn't exist, export will fail with clear message"
+            $entityFound = $true  # Allow export to proceed
+          }
           }
           
           # Approach 3: Final fallback - defer to export process
