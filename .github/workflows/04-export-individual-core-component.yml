@@ -174,11 +174,16 @@ jobs:
       run: |
         Write-Host "🔢 Getting and incrementing core solution version..."
         
+        # Ensure authentication
+        Write-Host "Setting up authentication for PAC CLI..."
+        & $env:POWERPLATFORMTOOLS_PACPATH auth create --environment ${{ vars.ENVIRONMENT_URL }} --applicationId ${{ vars.CLIENT_ID }} --clientSecret ${{ secrets.PowerPlatformSPN }} --tenant ${{ vars.TENANT_ID }}
+        
         # Get current solution list in JSON format
         $output = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json --environment ${{ vars.ENVIRONMENT_URL }}
         
         if ($LASTEXITCODE -ne 0) {
           Write-Host "PAC command failed with exit code: $LASTEXITCODE"
+          Write-Host "Command output: $output"
           exit 1
         }
         
@@ -188,6 +193,8 @@ jobs:
         
         if (-not $currentSolution) {
           Write-Host "❌ Core solution not found in environment"
+          Write-Host "Available solutions:"
+          $solutions | ForEach-Object { Write-Host "  - $($_.SolutionUniqueName)" }
           exit 1
         }
         
