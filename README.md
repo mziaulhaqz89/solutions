@@ -47,7 +47,41 @@ TEST = Testing environment with approval gates
 PRODUCTION = Production environment with approval gates
 ```
 
-### 3. Current Setup Status
+### 3. Solving Team Development Challenges ⭐ **NEW**
+
+**Problem**: Multiple developers working on different flows in the same solution
+- John completed Flow 1, wants to deploy
+- Doe still working on Flow 2, not ready
+- Risk of conflicts and blocking each other
+
+**Solution**: Use the new **Individual Flow Export** workflow!
+
+**Quick Start for John & Doe:**
+```yaml
+# John's Export (Ready to deploy)
+Workflow: "03-Export Individual Flow From Dev"
+Flow name: CreateContactWhenAccountCreated
+Developer: john
+Status: ready-for-export
+Mode: selective
+
+# Doe's Export (When ready later)  
+Workflow: "03-Export Individual Flow From Dev"
+Flow name: UpdateCustomerFlow
+Developer: doe
+Status: ready-for-export
+Mode: selective
+```
+
+**Benefits:**
+✅ **Independent Development** - No blocking between developers  
+✅ **Conflict Prevention** - Selective exports reduce merge conflicts  
+✅ **Clear Tracking** - Know who's working on what flow  
+✅ **Parallel Timelines** - Deploy when ready, not when everyone is ready  
+
+📖 **[Complete Guide: INDIVIDUAL_FLOW_EXPORT_GUIDE.md](./INDIVIDUAL_FLOW_EXPORT_GUIDE.md)**
+
+### 4. Current Setup Status
 
 **✅ Currently Working:**
 - Export workflows with solution checker validation
@@ -56,6 +90,7 @@ PRODUCTION = Production environment with approval gates
 - Automatic deployment on PR merge to main
 - Quality gates during deployment stages
 - Solution artifacts with retention
+- **Individual flow export for team coordination** ⭐
 
 **⚠️ Optional Enhancements Available:**
 - GitHub environment approval gates (configured but can be customized)
@@ -63,12 +98,24 @@ PRODUCTION = Production environment with approval gates
 - PR validation workflows
 - Advanced approval workflows
 
-### 4. Start Using
+### 5. Start Using
 
-**Export Solutions:**
+**For Team Flow Development (John & Doe Scenario):**
+1. Actions → **"03-Export Individual Flow From Dev"** → Run workflow
+2. Select your flow name and developer name
+3. Choose export mode: `selective` (recommended)
+4. Creates PR with flow-specific analysis
+5. Merge independently when ready! 🎉
+
+**For General Solution Export:**
 1. Actions → "Export Power Platform Solution" → Run workflow
 2. Choose solution name, custom branch name (optional)
 3. Creates PR with solution changes
+
+**For Feature Solutions:**
+1. Actions → "02-Export Feature Solution From Dev" → Run workflow
+2. Select feature solution and base solution
+3. Includes dependency analysis
 
 **Deploy Solutions:**
 1. Merge PR to `main` branch
@@ -95,24 +142,54 @@ Target branch: main
 Include managed: false
 ```
 
-### 2. 🚢 Deploy Travel Solution  
-**File**: `02-deploy-travel-solution.yml`  
-**Purpose**: Deploy travel solution through all environments
+### 2. � Export Feature Solution From Dev
+**File**: `02-export-feature-solution.yml`  
+**Purpose**: Export feature solutions with dependency analysis
+
+**Features**:
+- Feature solution export (Corefeature1, Flowsfeature1, etc.)
+- Base solution mapping
+- Dependency analysis and reporting
+- Version increment automation
+
+### 3. 🎯 Export Individual Flow From Dev ⭐ **NEW**
+**File**: `03-export-individual-flow.yml`  
+**Purpose**: **Solve the John & Doe scenario** - Independent flow development
+
+**Key Benefits**:
+- ✅ **Parallel Development**: Multiple developers can work on different flows
+- ✅ **Conflict Prevention**: Selective export mode reduces merge conflicts  
+- ✅ **Developer-Specific Branches**: Automatic branch naming with developer ID
+- ✅ **Status Tracking**: Track flow development status (ready, testing, etc.)
+- ✅ **Team Coordination**: Built-in conflict detection and analysis
+
+**Perfect for**:
+- John working on Flow 1, Doe working on Flow 2
+- Independent flow development timelines
+- Reducing merge conflicts in flow solutions
+
+**Usage**:
+```yaml
+Flow name: CreateContactWhenAccountCreated
+Developer name: john
+Story ID: TASK-123
+Flow status: ready-for-export
+Export mode: selective
+```
+
+### 4. 🚢 Deploy Core Solution  
+**File**: `02-deploy-core-solution.yml`  
+**Purpose**: Deploy core solution through all environments
+
+### 5. 🚢 Deploy Flows Solution
+**File**: `03-deploy-flows-solution.yml`  
+**Purpose**: Deploy flows solution through all environments
 
 **Triggers**:
-- **Push to `main`** when `solutions/travelsolution/**` changes (automatic)
-- Manual workflow dispatch
-- Release creation
-
-### 3. ☕ Deploy Coffee Shop Solution
-**File**: `03-deploy-coffeeshop-solution.yml`  
-**Purpose**: Deploy coffee shop solution through all environments  
-
-**Triggers**:
-- **Push to `main`** when `solutions/coffeeshop/**` changes (automatic)
+- **Push to `main`** when `solutions/flows/**` changes (automatic)
 - Manual workflow dispatch
 
-### 4. 🏗️ Shared Deployment Pipeline
+### 6. 🏗️ Shared Deployment Pipeline
 **File**: `shared-deployment-pipeline.yml`  
 **Purpose**: Reusable deployment workflow with quality gates
 

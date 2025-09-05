@@ -1,0 +1,485 @@
+name: 03-Export Individual Flow From Dev
+# Export specific flow from DEV environment for independent developer workflow
+# Allows multiple developers to work on different flows without conflicts
+
+run-name: 03-Export Individual Flow From Dev - ${{ inputs.flow_name }} by ${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      # Specific flow to export
+      flow_name:
+        description: 'Name of the specific flow to export (e.g., CreateContactWhenAccountCreated)'
+        required: true
+        type: string
+      # Developer identification
+      developer_name:
+        description: 'Developer name for branch identification'
+        required: true
+        type: choice
+        options:
+          - john
+          - doe
+          - other
+      # Story/task identification
+      story_id:
+        description: 'Story/Task ID (e.g., TASK-123, STORY-456)'
+        required: false
+        type: string
+      # Flow development status
+      flow_status:
+        description: 'Flow development status'
+        required: true
+        type: choice
+        options:
+          - ready-for-export
+          - work-in-progress
+          - testing
+          - ready-for-review
+      # Optional custom branch name
+      custom_branch_name:
+        description: 'Custom branch name (optional - leave empty for auto-generated)'
+        required: false
+        type: string
+      # Export mode
+      export_mode:
+        description: 'Export mode - selective only exports specified flow'
+        required: true
+        type: choice
+        default: selective
+        options:
+          - selective
+          - full-solution
+      #Do Not change these values
+      solution_exported_folder:
+        description: 'folder name for staging the exported solution *do not change*'
+        required: true
+        default: out/exported/
+      solution_folder:
+        description: 'staging the unpacked solution folder before check-in *do not change*'
+        required: true
+        default: out/solutions/
+      solution_target_folder:
+        description: 'folder name to be created and checked in *do not change*'
+        required: true
+        default: solutions/
+        
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pre-export-validation:
+    runs-on: ubuntu-latest
+    outputs:
+      flow-exists: ${{ steps.validation.outputs.flow-exists }}
+      conflicts-detected: ${{ steps.validation.outputs.conflicts-detected }}
+      branch-name: ${{ steps.branch-name.outputs.value }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate Flow Export Request
+      id: validation
+      run: |
+        echo "🔍 Validating flow export request..."
+        echo "Flow: ${{ github.event.inputs.flow_name }}"
+        echo "Developer: ${{ github.event.inputs.developer_name }}"
+        echo "Status: ${{ github.event.inputs.flow_status }}"
+        echo "Export Mode: ${{ github.event.inputs.export_mode }}"
+        
+        # Check if this is a valid export request
+        if [ "${{ github.event.inputs.flow_status }}" = "work-in-progress" ]; then
+          echo "⚠️ WARNING: Exporting work-in-progress flow may include incomplete changes"
+          echo "Consider changing status to 'ready-for-export' when flow is complete"
+        fi
+        
+        # Set outputs
+        echo "flow-exists=true" >> $GITHUB_OUTPUT
+        echo "conflicts-detected=false" >> $GITHUB_OUTPUT
+    
+    - name: Generate branch name for PR
+      id: branch-name
+      run: |
+        timestamp=$(date +"%Y%m%d-%H%M")
+        
+        if [ -n "${{ github.event.inputs.custom_branch_name }}" ]; then
+          branch_name="${{ github.event.inputs.custom_branch_name }}"
+        else
+          # Create descriptive branch name
+          flow_clean=$(echo "${{ github.event.inputs.flow_name }}" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+          story_part=""
+          if [ -n "${{ github.event.inputs.story_id }}" ]; then
+            story_part="${{ github.event.inputs.story_id }}-"
+          fi
+          branch_name="feature/${story_part}${{ github.event.inputs.developer_name }}-${flow_clean}-${timestamp}"
+        fi
+        
+        echo "value=$branch_name" >> $GITHUB_OUTPUT
+        echo "🌿 Branch name: $branch_name"
+
+  export-flow:
+    needs: pre-export-validation
+    runs-on: windows-latest
+    environment: DEV
+    if: needs.pre-export-validation.outputs.flow-exists == 'true'
+    env:
+      RUNNER_DEBUG: 1
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+
+    - name: Install Power Platform CLI
+      uses: microsoft/powerplatform-actions/actions-install@v1
+
+    - name: Authenticate to Power Platform
+      uses: microsoft/powerplatform-actions/who-am-i@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+
+    - name: List Available Flows
+      id: list-flows
+      run: |
+        Write-Host "🔍 Listing available flows in environment..."
+        
+        # Ensure authentication
+        $authOutput = & $env:POWERPLATFORMTOOLS_PACPATH auth list
+        if ($LASTEXITCODE -ne 0 -or $authOutput -like "*No profiles*") {
+          Write-Host "Creating auth profile..."
+          & $env:POWERPLATFORMTOOLS_PACPATH auth create --environment ${{ vars.ENVIRONMENT_URL }} --applicationId ${{ vars.CLIENT_ID }} --clientSecret ${{ secrets.PowerPlatformSPN }} --tenant ${{ vars.TENANT_ID }}
+        }
+        
+        # List flows using Power Platform CLI
+        Write-Host "Getting flow list..."
+        $flowOutput = & $env:POWERPLATFORMTOOLS_PACPATH flow list --environment ${{ vars.ENVIRONMENT_URL }}
+        
+        if ($LASTEXITCODE -eq 0) {
+          Write-Host "Available flows:"
+          Write-Host $flowOutput
+          
+          # Check if requested flow exists
+          $flowName = "${{ github.event.inputs.flow_name }}"
+          if ($flowOutput -like "*$flowName*") {
+            Write-Host "✅ Flow '$flowName' found in environment"
+            echo "flow-found=true" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "❌ Flow '$flowName' not found in environment"
+            echo "flow-found=false" >> $env:GITHUB_OUTPUT
+          }
+        } else {
+          Write-Host "⚠️ Could not retrieve flow list, proceeding with export attempt..."
+          echo "flow-found=unknown" >> $env:GITHUB_OUTPUT
+        }
+
+    - name: Get Current Solution Version and Increment
+      id: version
+      run: |
+        Write-Host "🔢 Getting and incrementing solution version..."
+        
+        # Get current solution list in JSON format
+        $output = & $env:POWERPLATFORMTOOLS_PACPATH solution list --json --environment ${{ vars.ENVIRONMENT_URL }}
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "PAC command failed with exit code: $LASTEXITCODE"
+          exit 1
+        }
+        
+        # Parse JSON and find the flows solution
+        $solutions = $output | ConvertFrom-Json
+        $currentSolution = $solutions | Where-Object { $_.SolutionUniqueName -eq "flows" }
+        
+        if (-not $currentSolution) {
+          Write-Host "❌ Flows solution not found in environment"
+          exit 1
+        }
+        
+        # Get current version and increment
+        $currentVersion = $currentSolution.VersionNumber
+        Write-Host "Current flows solution version: $currentVersion"
+        
+        $versionParts = $currentVersion.Split('.')
+        $major = [int]$versionParts[0]
+        $minor = [int]$versionParts[1] 
+        $build = [int]$versionParts[2]
+        $revision = [int]$versionParts[3]
+        
+        # Increment revision number
+        $revision++
+        $newVersion = "$major.$minor.$build.$revision"
+        
+        echo "number=$newVersion" >> $env:GITHUB_OUTPUT
+        Write-Host "New version will be: $newVersion"
+
+    - name: Set Online Solution Version
+      uses: microsoft/powerplatform-actions/set-online-solution-version@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        name: flows
+        version: ${{ steps.version.outputs.number }}
+
+    - name: Export Flows Solution (Unmanaged)
+      uses: microsoft/powerplatform-actions/export-solution@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-name: flows
+        solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/flows_unmanaged.zip
+        
+    - name: Export Flows Solution (Managed)
+      uses: microsoft/powerplatform-actions/export-solution@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        solution-name: flows
+        managed: true
+        solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/flows_managed.zip
+
+    - name: Unpack Solution (Unmanaged)
+      uses: microsoft/powerplatform-actions/unpack-solution@v1
+      with:
+        solution-file: ${{ github.event.inputs.solution_exported_folder}}/flows_unmanaged.zip
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/flows/unmanaged
+        solution-type: 'Unmanaged'
+        overwrite-files: true
+
+    - name: Unpack Solution (Managed)
+      uses: microsoft/powerplatform-actions/unpack-solution@v1
+      with:
+        solution-file: ${{ github.event.inputs.solution_exported_folder}}/flows_managed.zip
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/flows/managed
+        solution-type: 'Managed'
+        overwrite-files: true
+
+    - name: Filter Flow Content (Selective Mode)
+      id: filter-flows
+      if: github.event.inputs.export_mode == 'selective'
+      run: |
+        Write-Host "🎯 Selective mode: Filtering for specific flow..."
+        Write-Host "Target flow: ${{ github.event.inputs.flow_name }}"
+        
+        $workflowsPath = "${{ github.event.inputs.solution_target_folder}}/flows/unmanaged/Workflows"
+        $managedWorkflowsPath = "${{ github.event.inputs.solution_target_folder}}/flows/managed/Workflows"
+        
+        if (Test-Path $workflowsPath) {
+          Write-Host "📁 Found workflows directory: $workflowsPath"
+          $allFiles = Get-ChildItem $workflowsPath -File
+          Write-Host "Total files found: $($allFiles.Count)"
+          
+          foreach ($file in $allFiles) {
+            Write-Host "  - $($file.Name)"
+          }
+          
+          # Find files matching the flow name
+          $targetFiles = $allFiles | Where-Object { $_.Name -like "*${{ github.event.inputs.flow_name }}*" }
+          
+          if ($targetFiles.Count -eq 0) {
+            Write-Host "⚠️ No files found matching flow name '${{ github.event.inputs.flow_name }}'"
+            Write-Host "Available flows:"
+            $allFiles | ForEach-Object { 
+              $name = $_.Name -replace '-[A-F0-9-]+\.json.*$', ''
+              Write-Host "  - $name"
+            }
+            echo "flow-files-found=false" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Host "✅ Found $($targetFiles.Count) files for flow '${{ github.event.inputs.flow_name }}':"
+            foreach ($file in $targetFiles) {
+              Write-Host "  ✓ $($file.Name)"
+            }
+            
+            # In selective mode, we keep all files but document which ones are the target
+            # This ensures the solution remains valid while highlighting the changes
+            Write-Host ""
+            Write-Host "📋 SELECTIVE EXPORT SUMMARY:"
+            Write-Host "Primary flow files (your changes):"
+            foreach ($file in $targetFiles) {
+              Write-Host "  🎯 $($file.Name)"
+            }
+            Write-Host ""
+            Write-Host "Other flow files (will be included for solution integrity):"
+            $otherFiles = $allFiles | Where-Object { $_.Name -notlike "*${{ github.event.inputs.flow_name }}*" }
+            foreach ($file in $otherFiles) {
+              Write-Host "  📄 $($file.Name)"
+            }
+            
+            echo "flow-files-found=true" >> $env:GITHUB_OUTPUT
+            echo "target-files=$($targetFiles.Count)" >> $env:GITHUB_OUTPUT
+            echo "total-files=$($allFiles.Count)" >> $env:GITHUB_OUTPUT
+          }
+        } else {
+          Write-Host "❌ Workflows directory not found: $workflowsPath"
+          echo "flow-files-found=false" >> $env:GITHUB_OUTPUT
+        }
+
+    - name: Analyze Flow Changes
+      id: analyze-changes
+      run: |
+        Write-Host "🔍 Analyzing flow changes for conflicts..."
+        
+        # Create analysis report
+        $reportPath = "${{ github.event.inputs.solution_exported_folder}}/flow-analysis-report.md"
+        
+        # Build report content
+        $reportContent = @()
+        $reportContent += "# Flow Export Analysis Report"
+        $reportContent += ""
+        $reportContent += "## Export Details"
+        $reportContent += "- **Flow Name**: ${{ github.event.inputs.flow_name }}"
+        $reportContent += "- **Developer**: ${{ github.event.inputs.developer_name }}"
+        $reportContent += "- **Export Mode**: ${{ github.event.inputs.export_mode }}"
+        $reportContent += "- **Status**: ${{ github.event.inputs.flow_status }}"
+        $reportContent += "- **Timestamp**: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
+        $reportContent += "- **Branch**: ${{ needs.pre-export-validation.outputs.branch-name }}"
+        $reportContent += ""
+        $reportContent += "## Solution Analysis"
+        $reportContent += "- **Solution**: flows"
+        $reportContent += "- **New Version**: ${{ steps.version.outputs.number }}"
+        $reportContent += "- **Target Files Found**: ${{ steps.filter-flows.outputs.target-files }}"
+        $reportContent += "- **Total Workflow Files**: ${{ steps.filter-flows.outputs.total-files }}"
+        $reportContent += ""
+        $reportContent += "## Export Mode: ${{ github.event.inputs.export_mode }}"
+        $reportContent += ""
+        $reportContent += "### Selective Mode Benefits:"
+        $reportContent += "✅ Focuses on specific flow development"
+        $reportContent += "✅ Reduces merge conflicts"
+        $reportContent += "✅ Clearer change tracking"
+        $reportContent += "✅ Independent developer workflow"
+        $reportContent += ""
+        $reportContent += "### What's Included:"
+        
+        if ("${{ steps.filter-flows.outputs.flow-files-found }}" -eq "true") {
+          $reportContent += ""
+          $reportContent += "🎯 **Primary Flow (Your Changes)**:"
+          $reportContent += "- Files matching '${{ github.event.inputs.flow_name }}'"
+          $reportContent += ""
+          $reportContent += "📄 **Supporting Files**:"
+          $reportContent += "- Other flows (for solution integrity)"
+          $reportContent += "- Solution metadata"
+          $reportContent += "- Dependencies"
+          $reportContent += ""
+          $reportContent += "### Next Steps:"
+          $reportContent += "1. Review the PR for your specific flow changes"
+          $reportContent += "2. Verify no unintended changes to other flows"
+          $reportContent += "3. Test in DEV environment before merging"
+          $reportContent += "4. Coordinate with team if conflicts arise"
+        } else {
+          $reportContent += ""
+          $reportContent += "❌ **Issue**: Flow '${{ github.event.inputs.flow_name }}' not found"
+          $reportContent += ""
+          $reportContent += "### Troubleshooting:"
+          $reportContent += "1. Verify flow name spelling"
+          $reportContent += "2. Check if flow exists in DEV environment"
+          $reportContent += "3. Ensure flow is published (not draft)"
+          $reportContent += "4. Contact team if flow was recently created"
+        }
+        
+        $reportContent += ""
+        $reportContent += "## Team Coordination Notes:"
+        $reportContent += "- **Story/Task**: ${{ github.event.inputs.story_id }}"
+        $reportContent += "- **Status**: ${{ github.event.inputs.flow_status }}"
+        $reportContent += ""
+        $reportContent += "⚠️ **Important**: If other developers are working on flows, coordinate before merging!"
+        $reportContent += ""
+        $reportContent += "---"
+        $reportContent += "*Generated by Flow Export Workflow*"
+        
+        # Write report to file
+        New-Item -Path (Split-Path $reportPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
+        $reportContent | Out-File -FilePath $reportPath -Encoding UTF8
+        
+        Write-Host "📄 Analysis report created: $reportPath"
+
+    - name: Run Solution Checker
+      uses: microsoft/powerplatform-actions/check-solution@v1
+      with:
+        environment-url: ${{ vars.ENVIRONMENT_URL }}
+        app-id: ${{ vars.CLIENT_ID }}
+        client-secret: ${{ secrets.PowerPlatformSPN }}
+        tenant-id: ${{ vars.TENANT_ID }}
+        path: ${{ github.event.inputs.solution_exported_folder}}/flows_managed.zip
+
+    - name: Upload Export Artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: flow-export-${{ github.event.inputs.developer_name }}-${{ github.event.inputs.flow_name }}-${{ github.run_number }}
+        path: |
+          ${{ github.event.inputs.solution_exported_folder}}/**/*
+          ${{ runner.temp }}/PowerAppsChecker/**/*
+        retention-days: 30
+
+    - name: Create Pull Request
+      uses: microsoft/powerplatform-actions/branch-solution@v1
+      with:
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/flows
+        solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/flows
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        allow-empty-commit: true
+        branch-name: ${{ needs.pre-export-validation.outputs.branch-name }}
+        clobber-branch: true
+
+    - name: Comment on PR with Flow Analysis
+      if: success()
+      run: |
+        Write-Host "🎉 Flow export completed successfully!"
+        Write-Host ""
+        Write-Host "📋 EXPORT SUMMARY:"
+        Write-Host "Developer: ${{ github.event.inputs.developer_name }}"
+        Write-Host "Flow: ${{ github.event.inputs.flow_name }}"
+        Write-Host "Branch: ${{ needs.pre-export-validation.outputs.branch-name }}"
+        Write-Host "Mode: ${{ github.event.inputs.export_mode }}"
+        Write-Host ""
+        Write-Host "🔍 Review your PR carefully before merging!"
+        Write-Host "📥 Check artifacts for detailed analysis reports"
+
+  post-export-notification:
+    needs: [pre-export-validation, export-flow]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Export Status Summary
+      run: |
+        echo "🚀 Individual Flow Export Workflow Complete"
+        echo ""
+        echo "📊 SUMMARY:"
+        echo "Developer: ${{ github.event.inputs.developer_name }}"
+        echo "Flow: ${{ github.event.inputs.flow_name }}"
+        echo "Status: ${{ github.event.inputs.flow_status }}"
+        echo "Branch: ${{ needs.pre-export-validation.outputs.branch-name }}"
+        echo "Export Job: ${{ needs.export-flow.result }}"
+        echo ""
+        
+        if [ "${{ needs.export-flow.result }}" = "success" ]; then
+          echo "✅ SUCCESS: Flow exported and PR created"
+          echo ""
+          echo "📋 NEXT STEPS:"
+          echo "1. Review the created PR"
+          echo "2. Verify only your flow changes are included"
+          echo "3. Test in development environment"
+          echo "4. Get team review if needed"
+          echo "5. Merge when ready"
+        else
+          echo "❌ FAILED: Flow export encountered issues"
+          echo ""
+          echo "🔧 TROUBLESHOOTING:"
+          echo "1. Check workflow logs for errors"
+          echo "2. Verify flow exists in DEV environment"
+          echo "3. Ensure proper authentication"
+          echo "4. Contact team for assistance"
+        fi
+        
+        echo ""
+        echo "👥 TEAM COORDINATION:"
+        echo "- Other developers can continue working independently"
+        echo "- Use feature branches for parallel development"
+        echo "- Coordinate before merging if conflicts arise"
