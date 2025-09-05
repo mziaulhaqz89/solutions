@@ -1,8 +1,8 @@
-name: 01-Export Power Platform Solution
+name: 01-Export Solution From Dev
 # Export solution from DEV environment, unpack it and create a branch with the changes
 # Supports multiple solutions: travelsolution, coffeeshopsolution
 
-run-name: 01-Export Power Platform Solution - ${{ inputs.solution_name }}
+run-name: 01-Export Solution From Dev - ${{ inputs.solution_name }}
 
 on:
   workflow_dispatch:
@@ -13,10 +13,8 @@ on:
         required: true
         type: choice
         options:
-          - core
+          - coresolution
           - flows
-          - travelsolution
-          - coffeeshop
       # Optional custom branch name
       custom_branch_name:
         description: 'Custom branch name (optional - leave empty for auto-generated)'
