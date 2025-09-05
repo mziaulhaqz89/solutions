@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<forms xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <systemform>
+    <formid>{4d369cf7-4d87-4e99-bbc4-97ea715bcf3f}</formid>
+    <IntroducedVersion>1.0</IntroducedVersion>
+    <FormPresentation>1</FormPresentation>
+    <FormActivationState>1</FormActivationState>
+    <form>
+      <tabs>
+        <tab verticallayout="true" id="{3e7d6676-cf1e-4058-82e4-5e525fc42a76}" IsUserDefined="1">
+          <labels>
+            <label description="General" languagecode="1033" />
+          </labels>
+          <columns>
+            <column width="100%">
+              <sections>
+                <section showlabel="false" showbar="false" IsUserDefined="0" id="{0aa9095e-a788-4249-9edd-de9471c38e3e}">
+                  <labels>
+                    <label description="General" languagecode="1033" />
+                  </labels>
+                  <rows>
+                    <row>
+                      <cell id="{ebc199f4-344c-4098-ab9f-acd087e86703}">
+                        <labels>
+                          <label description="Solution Name" languagecode="1033" />
+                        </labels>
+                        <control id="cicd_solutionname" classid="{4273EDBD-AC1D-40d3-9FB2-095C621B552D}" datafieldname="cicd_solutionname" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{3acb6bca-8671-499a-ad8c-8e4615e4a303}">
+                        <labels>
+                          <label description="Owner" languagecode="1033" />
+                        </labels>
+                        <control id="ownerid" classid="{270BD3DB-D9AF-4782-9025-509E298DEC0A}" datafieldname="ownerid" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{41f70034-f175-4061-a224-6b4d0c2cb0fc}">
+                        <labels>
+                          <label description="Created Date" languagecode="1033" />
+                        </labels>
+                        <control id="cicd_createddate" classid="{5b773807-9fb2-42db-97c3-7a91eff8adff}" datafieldname="cicd_createddate" />
+                      </cell>
+                    </row>
+                  </rows>
+                </section>
+              </sections>
+            </column>
+          </columns>
+        </tab>
+      </tabs>
+    </form>
+    <IsCustomizable>1</IsCustomizable>
+    <CanBeDeleted>1</CanBeDeleted>
+    <LocalizedNames>
+      <LocalizedName description="Information" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="A form for this entity." languagecode="1033" />
+    </Descriptions>
+  </systemform>
+</forms>
