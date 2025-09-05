@@ -19,6 +19,16 @@ on:
           - Pluginsfeature2
           - Flowsfeature1
           - Flowsfeature2
+      # Base solution that this feature belongs to
+      base_solution:
+        description: 'Base solution that this feature extends'
+        required: true
+        type: choice
+        options:
+          - coresolution
+          - solution1
+          - solution2
+          - flows
       # Optional custom branch name
       custom_branch_name:
         description: 'Custom branch name (optional - leave empty for auto-generated)'
@@ -164,7 +174,7 @@ jobs:
       uses: microsoft/powerplatform-actions/unpack-solution@v1
       with:
         solution-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.feature_solution_name }}_unmanaged.zip
-        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}/unmanaged
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.base_solution }}/unmanaged
         solution-type: 'Unmanaged'
         overwrite-files: true
 
@@ -172,7 +182,7 @@ jobs:
       uses: microsoft/powerplatform-actions/unpack-solution@v1
       with:
         solution-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.feature_solution_name }}_managed.zip
-        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}/managed
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.base_solution }}/managed
         solution-type: 'Managed'
         overwrite-files: true
 
@@ -201,7 +211,7 @@ jobs:
         Write-Host "Analyzing solution: ${{ github.event.inputs.feature_solution_name }}"
         Write-Host ""
         
-        $solutionXmlPath = "${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}/unmanaged/Other/Solution.xml"
+        $solutionXmlPath = "${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.base_solution }}/unmanaged/Other/Solution.xml"
         
         if (-not (Test-Path $solutionXmlPath)) {
           Write-Host "⚠️  Warning: Could not find Solution.xml at $solutionXmlPath"
@@ -365,8 +375,8 @@ jobs:
     - name: branch-solution, prepare it for a PullRequest
       uses: microsoft/powerplatform-actions/branch-solution@v1
       with:
-        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}
-        solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.base_solution }}
+        solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.base_solution }}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         allow-empty-commit: true
         branch-name: ${{ steps.branch-name.outputs.value }}
