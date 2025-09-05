@@ -37,33 +37,9 @@
                     </row>
                   </rows>
                 </section>
-                <section name="null_section_3" id="449968a5-d27e-4f56-b3db-21f997de65da" IsUserDefined="0" locklevel="0" showlabel="true" showbar="false" layout="varwidth" celllabelalignment="Left" celllabelposition="Left" columns="1" labelwidth="115">
-                  <labels>
-                    <label description="Section 1" languagecode="1033" />
-                  </labels>
-                  <rows>
-                    <row />
-                    <row>
-                      <cell id="{795233dd-536f-4b43-a3bf-62e84e32773a}" locklevel="0" colspan="1" rowspan="1">
-                        <labels>
-                          <label description="col1" languagecode="1033" />
-                        </labels>
-                        <control id="cicd_col1" classid="{4273EDBD-AC1D-40D3-9FB2-095C621B552D}" datafieldname="cicd_col1" disabled="false" />
-                      </cell>
-                    </row>
-                    <row>
-                      <cell id="{4d1cae04-faf1-4c50-a6ff-0acee1d0ce41}" locklevel="0" colspan="1" rowspan="1">
-                        <labels>
-                          <label description="col2" languagecode="1033" />
-                        </labels>
-                        <control id="cicd_col2" classid="{4273EDBD-AC1D-40D3-9FB2-095C621B552D}" datafieldname="cicd_col2" disabled="false" />
-                      </cell>
-                    </row>
-                  </rows>
-                </section>
                 <section name="null_section_4" id="470e0128-7acc-4959-9b19-d99b725cc90e" IsUserDefined="0" locklevel="0" showlabel="true" showbar="false" layout="varwidth" celllabelalignment="Left" celllabelposition="Left" columns="1" labelwidth="115">
                   <labels>
-                    <label description="Section 2" languagecode="1033" />
+                    <label description="Patch by Paul" languagecode="1033" />
                   </labels>
                   <rows>
                     <row />
@@ -81,6 +57,14 @@
                           <label description="col4" languagecode="1033" />
                         </labels>
                         <control id="cicd_col4" classid="{4273EDBD-AC1D-40D3-9FB2-095C621B552D}" datafieldname="cicd_col4" disabled="false" />
+                      </cell>
+                    </row>
+                    <row>
+                      <cell id="{a031d10f-e0ed-4e8f-93dc-a15b705c02a9}" locklevel="0" colspan="1" rowspan="1">
+                        <labels>
+                          <label description="col5" languagecode="1033" />
+                        </labels>
+                        <control id="cicd_col5" classid="{4273EDBD-AC1D-40D3-9FB2-095C621B552D}" datafieldname="cicd_col5" disabled="false" />
                       </cell>
                     </row>
                   </rows>

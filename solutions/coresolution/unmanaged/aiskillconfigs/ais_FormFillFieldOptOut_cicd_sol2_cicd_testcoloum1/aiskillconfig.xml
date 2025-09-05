@@ -1,0 +1,15 @@
+<aiskillconfig uniquename="ais_FormFillFieldOptOut_cicd_sol2_cicd_testcoloum1">
+  <aiskill>FormFillFieldOptOut</aiskill>
+  <attribute>
+    <entityid.logicalname>cicd_sol2</entityid.logicalname>
+    <logicalname>cicd_testcoloum1</logicalname>
+  </attribute>
+  <description>cicd_sol2 - testcoloum1 Form fill opt out</description>
+  <entity>
+    <logicalname>cicd_sol2</logicalname>
+  </entity>
+  <iscustomizable>1</iscustomizable>
+  <scope>1</scope>
+  <statecode>0</statecode>
+  <statuscode>1</statuscode>
+</aiskillconfig>
