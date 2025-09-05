@@ -23,6 +23,14 @@
         </Titles>
         <SubArea Id="subarea_a294028f" Icon="/_imgs/imagestrips/transparent_spacer.gif" Entity="cicd_sol1" Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web" AvailableOffline="true" PassParams="false" Sku="All,OnPremise,Live,SPLA" />
       </Group>
+      <Group Id="group_f3de8cd0" ResourceId="SitemapDesigner.NewGroup" DescriptionResourceId="SitemapDesigner.NewGroup" IntroducedVersion="7.0.0.0" IsProfile="false" ToolTipResourseId="SitemapDesigner.Unknown">
+        <Titles>
+          <Title LCID="1033" Title="Registration" />
+        </Titles>
+        <SubArea Id="subarea_f3740fb4" Icon="/_imgs/imagestrips/transparent_spacer.gif" Entity="cicd_course" Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web" AvailableOffline="true" PassParams="false" Sku="All,OnPremise,Live,SPLA" />
+        <SubArea Id="subarea_28ab4446" Icon="/_imgs/imagestrips/transparent_spacer.gif" Entity="cicd_enrollment" Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web" AvailableOffline="true" PassParams="false" Sku="All,OnPremise,Live,SPLA" />
+        <SubArea Id="subarea_4ff92abc" Icon="/_imgs/imagestrips/transparent_spacer.gif" Entity="cicd_student" Client="All,Outlook,OutlookLaptopClient,OutlookWorkstationClient,Web" AvailableOffline="true" PassParams="false" Sku="All,OnPremise,Live,SPLA" />
+      </Group>
     </Area>
   </SiteMap>
   <LocalizedNames>
