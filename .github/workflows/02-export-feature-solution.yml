@@ -204,21 +204,117 @@ jobs:
         managed: true
         solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.feature_solution_name }}_managed.zip
 
-    - name: unpack-solution action (unmanaged)
+    - name: unpack-solution action (unmanaged) - Temporary
       uses: microsoft/powerplatform-actions/unpack-solution@v1
       with:
         solution-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.feature_solution_name }}_unmanaged.zip
-        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}/unmanaged
+        solution-folder: ${{ github.event.inputs.solution_folder}}/${{ github.event.inputs.feature_solution_name }}/unmanaged
         solution-type: 'Unmanaged'
         overwrite-files: true
 
-    - name: unpack-solution action (managed)
+    - name: unpack-solution action (managed) - Temporary
       uses: microsoft/powerplatform-actions/unpack-solution@v1
       with:
         solution-file: ${{ github.event.inputs.solution_exported_folder}}/${{ github.event.inputs.feature_solution_name }}_managed.zip
-        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}/managed
+        solution-folder: ${{ github.event.inputs.solution_folder}}/${{ github.event.inputs.feature_solution_name }}/managed
         solution-type: 'Managed'
         overwrite-files: true
+
+    - name: Merge Feature Solution into Base Solution
+      id: merge-solution
+      run: |
+        Write-Host "=== MERGING FEATURE SOLUTION INTO BASE SOLUTION ==="
+        Write-Host "Feature Solution: ${{ github.event.inputs.feature_solution_name }}"
+        Write-Host "Base Solution: ${{ github.event.inputs.base_solution }}"
+        Write-Host ""
+        
+        $featurePath = "${{ github.event.inputs.solution_folder}}/${{ github.event.inputs.feature_solution_name }}"
+        $basePath = "${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.base_solution }}"
+        
+        # Ensure base solution directory exists
+        if (-not (Test-Path $basePath)) {
+          Write-Host "Creating base solution directory: $basePath"
+          New-Item -Path $basePath -ItemType Directory -Force
+          New-Item -Path "$basePath/managed" -ItemType Directory -Force
+          New-Item -Path "$basePath/unmanaged" -ItemType Directory -Force
+        }
+        
+        Write-Host "Source (Feature): $featurePath"
+        Write-Host "Target (Base): $basePath"
+        Write-Host ""
+        
+        # Function to merge solution components
+        function Merge-SolutionComponents {
+          param($SourcePath, $TargetPath, $SolutionType)
+          
+          Write-Host "🔄 Merging $SolutionType solution components..."
+          
+          if (-not (Test-Path $SourcePath)) {
+            Write-Host "⚠️  Source path not found: $SourcePath"
+            return
+          }
+          
+          # Get all items from source
+          $sourceItems = Get-ChildItem -Path $SourcePath -Recurse -File
+          $copiedFiles = 0
+          $updatedFiles = 0
+          
+          foreach ($item in $sourceItems) {
+            $relativePath = $item.FullName.Substring($SourcePath.Length + 1)
+            $targetFile = Join-Path $TargetPath $relativePath
+            $targetDir = Split-Path $targetFile -Parent
+            
+            # Create target directory if it doesn't exist
+            if (-not (Test-Path $targetDir)) {
+              New-Item -Path $targetDir -ItemType Directory -Force | Out-Null
+            }
+            
+            # Check if file exists in target
+            if (Test-Path $targetFile) {
+              # Compare files and copy if different
+              $sourceHash = Get-FileHash $item.FullName -Algorithm MD5
+              $targetHash = Get-FileHash $targetFile -Algorithm MD5
+              
+              if ($sourceHash.Hash -ne $targetHash.Hash) {
+                Copy-Item $item.FullName $targetFile -Force
+                Write-Host "  📝 Updated: $relativePath"
+                $updatedFiles++
+              }
+            } else {
+              # New file, copy it
+              Copy-Item $item.FullName $targetFile -Force
+              Write-Host "  ➕ Added: $relativePath"
+              $copiedFiles++
+            }
+          }
+          
+          Write-Host "  ✅ $SolutionType: $copiedFiles new files, $updatedFiles updated files"
+          return @{ NewFiles = $copiedFiles; UpdatedFiles = $updatedFiles }
+        }
+        
+        # Merge unmanaged solution
+        $unmanagedStats = Merge-SolutionComponents "$featurePath/unmanaged" "$basePath/unmanaged" "Unmanaged"
+        
+        # Merge managed solution  
+        $managedStats = Merge-SolutionComponents "$featurePath/managed" "$basePath/managed" "Managed"
+        
+        Write-Host ""
+        Write-Host "📊 **MERGE SUMMARY**"
+        Write-Host "Unmanaged: $($unmanagedStats.NewFiles) new, $($unmanagedStats.UpdatedFiles) updated"
+        Write-Host "Managed: $($managedStats.NewFiles) new, $($managedStats.UpdatedFiles) updated"
+        
+        $totalChanges = $unmanagedStats.NewFiles + $unmanagedStats.UpdatedFiles + $managedStats.NewFiles + $managedStats.UpdatedFiles
+        echo "total_changes=$totalChanges" >> $env:GITHUB_OUTPUT
+        
+        Write-Host ""
+        Write-Host "✅ Feature solution successfully merged into base solution!"
+        
+        # Clean up temporary feature solution files
+        Write-Host "🧹 Cleaning up temporary files..."
+        if (Test-Path $featurePath) {
+          Remove-Item $featurePath -Recurse -Force
+          Write-Host "  Removed temporary feature solution files"
+        }
 
     - name: Run Solution Checker
       uses: microsoft/powerplatform-actions/check-solution@v1
@@ -246,7 +342,7 @@ jobs:
         Write-Host "Base solution: ${{ github.event.inputs.base_solution }}"
         Write-Host ""
         
-        $solutionXmlPath = "${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}/unmanaged/Other/Solution.xml"
+        $solutionXmlPath = "${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.base_solution }}/unmanaged/Other/Solution.xml"
         
         if (-not (Test-Path $solutionXmlPath)) {
           Write-Host "⚠️  Warning: Could not find Solution.xml at $solutionXmlPath"
@@ -333,8 +429,8 @@ jobs:
     - name: branch-solution, prepare it for a PullRequest
       uses: microsoft/powerplatform-actions/branch-solution@v1
       with:
-        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}
-        solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.feature_solution_name }}
+        solution-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.base_solution }}
+        solution-target-folder: ${{ github.event.inputs.solution_target_folder}}/${{ github.event.inputs.base_solution }}
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         allow-empty-commit: true
         branch-name: ${{ steps.branch-name.outputs.value }}
@@ -362,11 +458,18 @@ jobs:
           - **Export Date**: ${{ steps.timestamp.outputs.value }}
           
           ### 🔍 **What's Included**
-          This PR contains the exported feature solution with:
-          - Unmanaged solution components
-          - Managed solution components  
+          This PR merges the feature solution components into the base solution:
+          - Feature components added to base solution structure
+          - Unmanaged solution components merged
+          - Managed solution components merged  
           - Solution checker analysis results
           - Dependency analysis
+          
+          ### 🔄 **Merge Summary**
+          - **Feature Solution**: ${{ github.event.inputs.feature_solution_name }}
+          - **Target Base Solution**: ${{ github.event.inputs.base_solution }}
+          - **Total Changes**: ${{ steps.merge-solution.outputs.total_changes }} files
+          - **Merge Strategy**: Feature components merged into base solution structure
           
           ### ✅ **Pre-Deployment Checklist**
           - [ ] Base solution '${{ github.event.inputs.base_solution }}' is deployed in target environment
@@ -416,10 +519,15 @@ jobs:
         Write-Host "### 📁 **Solution Structure**"
         Write-Host "```"
         Write-Host "solutions/"
-        Write-Host "└── ${{ github.event.inputs.feature_solution_name }}/"
-        Write-Host "    ├── managed/     # Managed solution components"
-        Write-Host "    └── unmanaged/   # Unmanaged solution components"
+        Write-Host "└── ${{ github.event.inputs.base_solution }}/"
+        Write-Host "    ├── managed/     # Updated with feature components"
+        Write-Host "    └── unmanaged/   # Updated with feature components"
         Write-Host "```"
+        Write-Host ""
+        Write-Host "### 🔄 **Changes Made**"
+        Write-Host "- Feature solution components merged into base solution"
+        Write-Host "- Total files changed: ${{ steps.merge-solution.outputs.total_changes }}"
+        Write-Host "- Base solution now includes ${{ github.event.inputs.feature_solution_name }} changes"
         Write-Host ""
         Write-Host "### 🚀 **Next Steps**"
         Write-Host "1. Review the Pull Request that was created"
