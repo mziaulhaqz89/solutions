@@ -6,7 +6,7 @@
       <LocalizedName description="coresolution" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.0.6</Version>
+    <Version>1.0.0.7</Version>
     <Managed>1</Managed>
     <Publisher>
       <UniqueName>cicdpoc</UniqueName>
@@ -82,6 +82,7 @@
       <RootComponent type="1" schemaName="cicd_course" behavior="0" />
       <RootComponent type="1" schemaName="cicd_enrollment" behavior="0" />
       <RootComponent type="1" schemaName="cicd_sol1" behavior="0" />
+      <RootComponent type="1" schemaName="cicd_sol2" behavior="0" />
       <RootComponent type="1" schemaName="cicd_student" behavior="0" />
       <RootComponent type="1" schemaName="contact" behavior="0" />
       <RootComponent type="1" schemaName="email" behavior="0" />

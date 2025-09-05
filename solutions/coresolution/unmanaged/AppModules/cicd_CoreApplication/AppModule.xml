@@ -14,8 +14,10 @@
     <AppModuleComponent type="1" schemaName="cicd_course" />
     <AppModuleComponent type="1" schemaName="cicd_enrollment" />
     <AppModuleComponent type="1" schemaName="cicd_sol1" />
+    <AppModuleComponent type="1" schemaName="cicd_sol2" />
     <AppModuleComponent type="1" schemaName="cicd_student" />
     <AppModuleComponent type="1" schemaName="contact" />
+    <AppModuleComponent type="1" schemaName="email" />
     <AppModuleComponent type="62" schemaName="cicd_CoreApplication" />
   </AppModuleComponents>
   <AppModuleRoleMaps>
