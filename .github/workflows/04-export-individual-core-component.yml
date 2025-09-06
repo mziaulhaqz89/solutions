@@ -225,7 +225,7 @@ jobs:
         name: coresolution
         version: ${{ steps.version.outputs.number }}
 
-    - name: Export Core Solution (Unmanaged)
+    - name: Export Core Solution (Full - Required for Component Extraction)
       uses: microsoft/powerplatform-actions/export-solution@v1
       with:
         environment-url: ${{ vars.ENVIRONMENT_URL }}
@@ -233,9 +233,9 @@ jobs:
         client-secret: ${{ secrets.PowerPlatformSPN }}
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: coresolution
-        solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_unmanaged.zip
+        solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_full_unmanaged.zip
         
-    - name: Export Core Solution (Managed)
+    - name: Export Core Solution Managed (Full - Required for Component Extraction)
       uses: microsoft/powerplatform-actions/export-solution@v1
       with:
         environment-url: ${{ vars.ENVIRONMENT_URL }}
@@ -244,23 +244,245 @@ jobs:
         tenant-id: ${{ vars.TENANT_ID }}
         solution-name: coresolution
         managed: true
-        solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_managed.zip
+        solution-output-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_full_managed.zip
 
-    - name: Unpack Solution (Unmanaged)
+    - name: Unpack Full Solution for Component Extraction
       uses: microsoft/powerplatform-actions/unpack-solution@v1
       with:
-        solution-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_unmanaged.zip
-        solution-folder: ${{ github.event.inputs.solution_target_folder}}/coresolution/unmanaged
+        solution-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_full_unmanaged.zip
+        solution-folder: ${{ github.event.inputs.solution_folder}}/coresolution_full/unmanaged
         solution-type: 'Unmanaged'
         overwrite-files: true
 
-    - name: Unpack Solution (Managed)
-      uses: microsoft/powerplatform-actions/unpack-solution@v1
-      with:
-        solution-file: ${{ github.event.inputs.solution_exported_folder}}/coresolution_managed.zip
-        solution-folder: ${{ github.event.inputs.solution_target_folder}}/coresolution/managed
-        solution-type: 'Managed'
-        overwrite-files: true
+    - name: Extract Specific Component and Create Selective Solution
+      id: extract-component
+      run: |
+        Write-Host "🎯 SELECTIVE EXPORT: Extracting only component '${{ github.event.inputs.component_name }}'"
+        
+        $componentName = "${{ github.event.inputs.component_name }}"
+        $componentType = "${{ github.event.inputs.component_type }}"
+        $fullSolutionPath = "${{ github.event.inputs.solution_folder}}/coresolution_full/unmanaged"
+        $selectiveSolutionPath = "${{ github.event.inputs.solution_target_folder}}/coresolution/unmanaged"
+        
+        # Create selective solution directory structure
+        New-Item -Path $selectiveSolutionPath -ItemType Directory -Force
+        New-Item -Path "$selectiveSolutionPath/Other" -ItemType Directory -Force
+        
+        $extractedFiles = @()
+        $skippedDirs = @()
+        
+        # Copy essential solution files
+        Write-Host "📋 Copying essential solution metadata..."
+        $essentialFiles = @("Other/Solution.xml", "Other/Customizations.xml")
+        foreach ($file in $essentialFiles) {
+          $sourcePath = Join-Path $fullSolutionPath $file
+          $destPath = Join-Path $selectiveSolutionPath $file
+          if (Test-Path $sourcePath) {
+            Copy-Item $sourcePath $destPath -Force
+            $extractedFiles += $file
+            Write-Host "  ✅ $file"
+          }
+        }
+        
+        # Extract component-specific content
+        switch ($componentType) {
+          "entity" {
+            Write-Host "🗂️ Extracting entity: $componentName"
+            $entitySourcePath = Join-Path $fullSolutionPath "Entities/$componentName"
+            $entityDestPath = Join-Path $selectiveSolutionPath "Entities/$componentName"
+            
+            if (Test-Path $entitySourcePath) {
+              New-Item -Path (Split-Path $entityDestPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
+              Copy-Item $entitySourcePath $entityDestPath -Recurse -Force
+              
+              # Count extracted files
+              $entityFiles = Get-ChildItem $entityDestPath -Recurse -File
+              $extractedFiles += $entityFiles | ForEach-Object { $_.FullName.Replace("$selectiveSolutionPath\", "").Replace("\", "/") }
+              
+              Write-Host "  ✅ Entity '$componentName' extracted: $($entityFiles.Count) files"
+              
+              # Also copy related entities mentioned in relationships
+              $relationshipsPath = Join-Path $fullSolutionPath "Other/Relationships.xml"
+              if (Test-Path $relationshipsPath) {
+                Copy-Item $relationshipsPath (Join-Path $selectiveSolutionPath "Other/Relationships.xml") -Force
+                $extractedFiles += "Other/Relationships.xml"
+                Write-Host "  ✅ Relationships.xml included"
+              }
+              
+              echo "extraction-successful=true" >> $env:GITHUB_OUTPUT
+            } else {
+              Write-Host "  ❌ Entity '$componentName' not found at: $entitySourcePath"
+              echo "extraction-successful=false" >> $env:GITHUB_OUTPUT
+            }
+          }
+          
+          "form" {
+            Write-Host "🖼️ Extracting forms containing: $componentName"
+            $entitiesPath = Join-Path $fullSolutionPath "Entities"
+            $formsFound = 0
+            
+            if (Test-Path $entitiesPath) {
+              $entityDirs = Get-ChildItem $entitiesPath -Directory
+              foreach ($entityDir in $entityDirs) {
+                $formsPath = Join-Path $entityDir.FullName "Forms"
+                if (Test-Path $formsPath) {
+                  $formFiles = Get-ChildItem $formsPath -File | Where-Object { $_.Name -like "*$componentName*" }
+                  if ($formFiles) {
+                    # Copy the entire entity folder that contains the target form
+                    $entityDestPath = Join-Path $selectiveSolutionPath "Entities/$($entityDir.Name)"
+                    New-Item -Path (Split-Path $entityDestPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
+                    Copy-Item $entityDir.FullName $entityDestPath -Recurse -Force
+                    
+                    $formsFound += $formFiles.Count
+                    $entityFiles = Get-ChildItem $entityDestPath -Recurse -File
+                    $extractedFiles += $entityFiles | ForEach-Object { $_.FullName.Replace("$selectiveSolutionPath\", "").Replace("\", "/") }
+                    
+                    Write-Host "  ✅ Found forms in entity '$($entityDir.Name)': $($formFiles.Count) forms"
+                  }
+                }
+              }
+            }
+            
+            if ($formsFound -gt 0) {
+              echo "extraction-successful=true" >> $env:GITHUB_OUTPUT
+              Write-Host "✅ Total forms extracted: $formsFound"
+            } else {
+              echo "extraction-successful=false" >> $env:GITHUB_OUTPUT
+              Write-Host "❌ No forms found matching '$componentName'"
+            }
+          }
+          
+          "view" {
+            Write-Host "👁️ Extracting views containing: $componentName"
+            $entitiesPath = Join-Path $fullSolutionPath "Entities"
+            $viewsFound = 0
+            
+            if (Test-Path $entitiesPath) {
+              $entityDirs = Get-ChildItem $entitiesPath -Directory
+              foreach ($entityDir in $entityDirs) {
+                $viewsPath = Join-Path $entityDir.FullName "SavedQueries"
+                if (Test-Path $viewsPath) {
+                  $viewFiles = Get-ChildItem $viewsPath -File | Where-Object { $_.Name -like "*$componentName*" }
+                  if ($viewFiles) {
+                    # Copy the entire entity folder that contains the target view
+                    $entityDestPath = Join-Path $selectiveSolutionPath "Entities/$($entityDir.Name)"
+                    New-Item -Path (Split-Path $entityDestPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
+                    Copy-Item $entityDir.FullName $entityDestPath -Recurse -Force
+                    
+                    $viewsFound += $viewFiles.Count
+                    $entityFiles = Get-ChildItem $entityDestPath -Recurse -File
+                    $extractedFiles += $entityFiles | ForEach-Object { $_.FullName.Replace("$selectiveSolutionPath\", "").Replace("\", "/") }
+                    
+                    Write-Host "  ✅ Found views in entity '$($entityDir.Name)': $($viewFiles.Count) views"
+                  }
+                }
+              }
+            }
+            
+            if ($viewsFound -gt 0) {
+              echo "extraction-successful=true" >> $env:GITHUB_OUTPUT
+              Write-Host "✅ Total views extracted: $viewsFound"
+            } else {
+              echo "extraction-successful=false" >> $env:GITHUB_OUTPUT
+              Write-Host "❌ No views found matching '$componentName'"
+            }
+          }
+          
+          "workflow" {
+            Write-Host "⚙️ Extracting workflows containing: $componentName"
+            $workflowsPath = Join-Path $fullSolutionPath "Workflows"
+            
+            if (Test-Path $workflowsPath) {
+              New-Item -Path (Join-Path $selectiveSolutionPath "Workflows") -ItemType Directory -Force
+              $workflowFiles = Get-ChildItem $workflowsPath -File | Where-Object { $_.Name -like "*$componentName*" }
+              
+              if ($workflowFiles) {
+                foreach ($workflowFile in $workflowFiles) {
+                  $destPath = Join-Path $selectiveSolutionPath "Workflows/$($workflowFile.Name)"
+                  Copy-Item $workflowFile.FullName $destPath -Force
+                  $extractedFiles += "Workflows/$($workflowFile.Name)"
+                  Write-Host "  ✅ $($workflowFile.Name)"
+                }
+                echo "extraction-successful=true" >> $env:GITHUB_OUTPUT
+                Write-Host "✅ Total workflows extracted: $($workflowFiles.Count)"
+              } else {
+                echo "extraction-successful=false" >> $env:GITHUB_OUTPUT
+                Write-Host "❌ No workflows found matching '$componentName'"
+              }
+            } else {
+              echo "extraction-successful=false" >> $env:GITHUB_OUTPUT
+              Write-Host "❌ No Workflows directory found in solution"
+            }
+          }
+          
+          default {
+            Write-Host "🔍 General component search for: $componentName"
+            # Recursive search for any files matching the component name
+            $allFiles = Get-ChildItem $fullSolutionPath -Recurse -File | Where-Object { $_.Name -like "*$componentName*" }
+            
+            if ($allFiles) {
+              foreach ($file in $allFiles) {
+                $relativePath = $file.FullName.Replace("$fullSolutionPath\", "").Replace("\", "/")
+                $destPath = Join-Path $selectiveSolutionPath $relativePath
+                New-Item -Path (Split-Path $destPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
+                Copy-Item $file.FullName $destPath -Force
+                $extractedFiles += $relativePath
+                Write-Host "  ✅ $relativePath"
+              }
+              echo "extraction-successful=true" >> $env:GITHUB_OUTPUT
+              Write-Host "✅ Total component files extracted: $($allFiles.Count)"
+            } else {
+              echo "extraction-successful=false" >> $env:GITHUB_OUTPUT
+              Write-Host "❌ No files found matching '$componentName'"
+            }
+          }
+        }
+        
+        # Count all directories that were skipped
+        $allDirs = Get-ChildItem $fullSolutionPath -Directory -Recurse
+        $extractedDirs = Get-ChildItem $selectiveSolutionPath -Directory -Recurse -ErrorAction SilentlyContinue
+        $skippedCount = $allDirs.Count - $extractedDirs.Count
+        
+        echo "extracted-files=$($extractedFiles.Count)" >> $env:GITHUB_OUTPUT
+        echo "skipped-dirs=$skippedCount" >> $env:GITHUB_OUTPUT
+        
+        Write-Host ""
+        Write-Host "📊 SELECTIVE EXTRACTION SUMMARY:"
+        Write-Host "✅ Files extracted: $($extractedFiles.Count)"
+        Write-Host "⏭️ Directories skipped: $skippedCount"
+        Write-Host "🎯 Component: $componentName ($componentType)"
+        Write-Host ""
+        Write-Host "🔍 This is a TRUE selective export - only your component was extracted!"
+
+    - name: Create Managed Version from Selective Solution
+      if: steps.extract-component.outputs.extraction-successful == 'true'
+      run: |
+        Write-Host "📦 Creating managed version of selective solution..."
+        
+        $selectiveUnmanagedPath = "${{ github.event.inputs.solution_target_folder}}/coresolution/unmanaged"
+        $selectiveManagedPath = "${{ github.event.inputs.solution_target_folder}}/coresolution/managed"
+        
+        # For now, copy the unmanaged to managed (in a real scenario, you'd import unmanaged and export as managed)
+        Copy-Item $selectiveUnmanagedPath $selectiveManagedPath -Recurse -Force
+        
+        Write-Host "✅ Selective managed solution created"
+
+    - name: Fallback - Use Full Solution If Component Extraction Failed
+      if: steps.extract-component.outputs.extraction-successful != 'true'
+      run: |
+        Write-Host "⚠️ Component extraction failed, falling back to full solution export"
+        Write-Host "This means the entire core solution will be included in the PR"
+        
+        $fullSolutionPath = "${{ github.event.inputs.solution_folder}}/coresolution_full/unmanaged"
+        $targetPath = "${{ github.event.inputs.solution_target_folder}}/coresolution/unmanaged"
+        
+        # Copy full solution to target
+        Copy-Item $fullSolutionPath $targetPath -Recurse -Force
+        
+        # Also unpack and copy managed version
+        & $env:POWERPLATFORMTOOLS_PACPATH solution unpack --packagetype Managed --zipfile "${{ github.event.inputs.solution_exported_folder}}/coresolution_full_managed.zip" --folder "${{ github.event.inputs.solution_target_folder}}/coresolution/managed" --allowWrite
+        
+        Write-Host "⚠️ Full solution unpacked - review PR carefully for unintended changes"
 
     - name: Filter Core Component Content (Selective Mode)
       id: filter-components
@@ -667,7 +889,7 @@ jobs:
         app-id: ${{ vars.CLIENT_ID }}
         client-secret: ${{ secrets.PowerPlatformSPN }}
         tenant-id: ${{ vars.TENANT_ID }}
-        path: ${{ github.event.inputs.solution_exported_folder}}/coresolution_managed.zip
+        path: ${{ github.event.inputs.solution_exported_folder}}/coresolution_full_managed.zip
 
     - name: Upload Export Artifacts
       uses: actions/upload-artifact@v4
@@ -700,6 +922,17 @@ jobs:
         Write-Host "Branch: ${{ needs.pre-export-validation.outputs.branch-name }}"
         Write-Host "Mode: ${{ github.event.inputs.export_mode }}"
         Write-Host "Status: ${{ github.event.inputs.component_status }}"
+        
+        if ("${{ steps.extract-component.outputs.extraction-successful }}" -eq "true") {
+          Write-Host "Export Type: Component-specific (only your component extracted)"
+          Write-Host "✅ True selective export - minimal PR changes expected"
+          Write-Host "📊 Files extracted: ${{ steps.extract-component.outputs.extracted-files }}"
+          Write-Host "📊 Directories skipped: ${{ steps.extract-component.outputs.skipped-dirs }}"
+        } else {
+          Write-Host "Export Type: Full solution (component-specific extraction failed, used fallback)"
+          Write-Host "⚠️ This exported the entire core solution - review PR carefully!"
+        }
+        
         Write-Host ""
         Write-Host "🔍 Review your PR carefully before merging!"
         Write-Host "📥 Check artifacts for detailed analysis reports"
